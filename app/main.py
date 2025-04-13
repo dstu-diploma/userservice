@@ -2,6 +2,6 @@ from fastapi import FastAPI
 from app.db import init_db
 from app.views import main_router
 
-app = FastAPI(title="DSTU Diploma | AuthService", docs_url="/swagger")
+app = FastAPI(title="DSTU Diploma | UserService", docs_url="/swagger")
 init_db(app)
 app.include_router(main_router)
