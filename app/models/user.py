@@ -13,8 +13,8 @@ class UserModel(Model):
     last_name = fields.CharField(max_length=30)
     patronymic = fields.CharField(max_length=30)
 
-    def verify_password(self, password):
-        return bcrypt.checkpw(password, self.password_hash)
+    def verify_password(self, password: str):
+        return bcrypt.checkpw(password.encode(), self.password_hash.encode())
 
     class Meta:
         table: str = "users"
