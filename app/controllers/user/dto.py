@@ -47,3 +47,9 @@ class OptionalFullUserData(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     patronymic: str | None = None
+
+
+class RegisteredUserDto(BaseModel):
+    user: FullUserDto
+    access_token: str
+    refresh_token: str

@@ -1,47 +1,65 @@
+from app.grpc.auth import IAuthServiceClient
 from .dto import (
     FullUserDto,
     MinimalUserDto,
     OptionalFullUserData,
     CreateUserDto,
+    RegisteredUserDto,
 )
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
+from app.grpc.auth import get_auth_client
 from app.models import UserModel
-from os import environ
 import bcrypt
 
 SALT = bcrypt.gensalt()
 
 
-async def get_user_from_id(user_id: int):
-    user = await UserModel.get_or_none(id=user_id)
+class UserController:
+    def __init__(self, auth_service: IAuthServiceClient):
+        self.auth_service = auth_service
 
-    if user is None:
-        raise HTTPException(status_code=404, detail="No user with such UserID!")
+    async def get_user_from_id(self, user_id: int):
+        user = await UserModel.get_or_none(id=user_id)
 
-    return user
+        if user is None:
+            raise HTTPException(
+                status_code=404, detail="No user with such UserID!"
+            )
+
+        return user
+
+    async def create(self, password: str, dto: CreateUserDto):
+        model = await UserModel.create(
+            password_hash=bcrypt.hashpw(password.encode(), SALT),
+            **dto.model_dump(),
+        )
+
+        tokens = await self.auth_service.init_user(model.id, "user")
+        user_dto = FullUserDto.from_tortoise(model)
+
+        return RegisteredUserDto(
+            user=user_dto,
+            access_token=tokens.access_token,
+            refresh_token=tokens.refresh_token,
+        )
+
+    async def update_info(self, dto: OptionalFullUserData):
+        user = await self.get_user_from_id(dto.id)
+        user.update_from_dict(dto.model_dump(exclude_none=True))
+
+        await user.save()
+        return FullUserDto.from_tortoise(user)
+
+    async def delete(self, user_id: int):
+        user = await self.get_user_from_id(user_id)
+        await user.delete()
+
+    async def get_all(self):
+        users = await UserModel.all()
+        return [MinimalUserDto.from_tortoise(user) for user in users]
 
 
-async def create(password: str, dto: CreateUserDto):
-    model = await UserModel.create(
-        password_hash=bcrypt.hashpw(password.encode(), SALT), **dto.model_dump()
-    )
-
-    return FullUserDto.from_tortoise(model)
-
-
-async def update_info(dto: OptionalFullUserData):
-    user = await get_user_from_id(dto.id)
-    user.update_from_dict(dto.model_dump(exclude_none=True))
-
-    await user.save()
-    return FullUserDto.from_tortoise(user)
-
-
-async def delete(user_id: int):
-    user = await get_user_from_id(user_id)
-    await user.delete()
-
-
-async def get_all():
-    users = await UserModel.all()
-    return [MinimalUserDto.from_tortoise(user) for user in users]
+def get_user_controller(
+    auth_client: IAuthServiceClient = Depends(get_auth_client),
+) -> UserController:
+    return UserController(auth_client)

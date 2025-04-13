@@ -1,31 +1,42 @@
-from app.controllers import user as user_controller
+from app.controllers.user import (
+    OptionalFullUserData,
+    get_user_controller,
+    UserController,
+    CreateUserDto,
+    FullUserDto,
+    RegisteredUserDto,
+)
 from fastapi import APIRouter, Depends, Query
-from app.grpc.auth import AuthServiceClient, get_auth_client
-
 
 router = APIRouter(prefix="")
 
 
-@router.post("/", response_model=user_controller.FullUserDto)
+@router.post("/", response_model=RegisteredUserDto)
 async def create(
-    user_dto: user_controller.CreateUserDto,
-    auth_service: AuthServiceClient = Depends(get_auth_client),
+    user_dto: CreateUserDto,
+    user_controller: UserController = Depends(get_user_controller),
 ):
-    user = await user_controller.create(user_dto.password, user_dto)
-    await auth_service.init_user(user.id, "user")
-    return user
+    return await user_controller.create(user_dto.password, user_dto)
 
 
-@router.patch("/", response_model=user_controller.FullUserDto)
-async def update(update_dto: user_controller.OptionalFullUserData):
+@router.patch("/", response_model=FullUserDto)
+async def update(
+    update_dto: OptionalFullUserData,
+    user_controller: UserController = Depends(get_user_controller),
+):
     return await user_controller.update_info(update_dto)
 
 
 @router.delete("/")
-async def delete(user_id: int = Query(..., ge=0)):
+async def delete(
+    user_id: int = Query(..., ge=0),
+    user_controller: UserController = Depends(get_user_controller),
+):
     return await user_controller.delete(user_id)
 
 
 @router.get("/")
-async def get_all():
+async def get_all(
+    user_controller: UserController = Depends(get_user_controller),
+):
     return await user_controller.get_all()
