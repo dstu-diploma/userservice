@@ -30,7 +30,7 @@ class UserController:
 
     async def create(self, password: str, dto: CreateUserDto):
         model = await UserModel.create(
-            password_hash=bcrypt.hashpw(password.encode(), SALT),
+            password_hash=bcrypt.hashpw(password.encode(), SALT).decode(),
             **dto.model_dump(),
         )
 
