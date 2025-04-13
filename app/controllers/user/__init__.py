@@ -58,6 +58,10 @@ class UserController:
             refresh_token=tokens.refresh_token,
         )
 
+    async def get_info(self, user_id: int):
+        user = await self.get_user_from_id(user_id)
+        return FullUserDto.from_tortoise(user)
+
     async def update_info(self, dto: OptionalFullUserData):
         user = await self.get_user_from_id(dto.id)
         user.update_from_dict(dto.model_dump(exclude_none=True))
