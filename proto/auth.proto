@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package auth;
+
+message TokenPair {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message UserRequest {
+  int32 user_id = 1;
+  string role = 2;
+}
+
+message AccessTokenRequest {
+  int32 user_id = 1;
+  string refresh_token = 2;
+}
+
+message TokenResponse {
+  string token = 1;
+}
+
+message TokenValidationRequest {
+  string token = 1;
+}
+
+message TokenValidationResponse {
+  bool is_valid = 1;
+  int32 user_id = 2;
+  string role = 3;
+}
+
+service AuthService {
+  rpc InitUser(UserRequest) returns (TokenPair);
+  rpc GenerateKeyPair(UserRequest) returns (TokenPair);
+  rpc GenerateAccessToken(AccessTokenRequest) returns (TokenResponse);
+  rpc GenerateRefreshToken(UserRequest) returns (TokenResponse);
+  rpc ValidateRefreshToken(TokenValidationRequest) returns (TokenValidationResponse);
+}
