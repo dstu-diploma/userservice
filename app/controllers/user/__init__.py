@@ -34,11 +34,26 @@ class UserController:
             **dto.model_dump(),
         )
 
-        tokens = await self.auth_service.init_user(model.id, "user")
-        user_dto = FullUserDto.from_tortoise(model)
+        tokens = await self.auth_service.init_user(model.id, model.role)
 
         return RegisteredUserDto(
-            user=user_dto,
+            user=FullUserDto.from_tortoise(model),
+            access_token=tokens.access_token,
+            refresh_token=tokens.refresh_token,
+        )
+
+    async def login(self, email: str, password: str):
+        user = await UserModel.get_or_none(email=email)
+
+        if user is None or not user.verify_password(password):
+            raise HTTPException(
+                status_code=403, detail="Invalid email or password!"
+            )
+
+        tokens = await self.auth_service.generate_key_pair(user.id, user.role)
+
+        return RegisteredUserDto(
+            user=FullUserDto.from_tortoise(user),
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token,
         )

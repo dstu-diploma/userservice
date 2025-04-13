@@ -1,3 +1,4 @@
+from fastapi.security import OAuth2PasswordRequestForm
 from app.controllers.user import (
     OptionalFullUserData,
     get_user_controller,
@@ -17,6 +18,14 @@ async def create(
     user_controller: UserController = Depends(get_user_controller),
 ):
     return await user_controller.create(user_dto.password, user_dto)
+
+
+@router.post("/login", response_model=RegisteredUserDto)
+async def login(
+    input: OAuth2PasswordRequestForm = Depends(),
+    user_controller: UserController = Depends(get_user_controller),
+):
+    return await user_controller.login(input.username, input.password)
 
 
 @router.patch("/", response_model=FullUserDto)
