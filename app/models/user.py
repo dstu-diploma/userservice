@@ -27,10 +27,9 @@ class UserModel(Model):
 class UserTokensModel(Model):
     id = fields.IntField(pk=True)
     token_revision = fields.IntField(default=0)
-    user: fields.ForeignKeyRelation = fields.ForeignKeyField(
+    user: fields.OneToOneRelation = fields.OneToOneField(
         "models.UserModel",
         related_name="users",
-        unique=True,
         on_delete=fields.CASCADE,
     )
 
