@@ -8,10 +8,14 @@ class UserModel(Model):
     email = fields.CharField(null=False, max_length=60, unique=True)
     password_hash = fields.CharField(max_length=128)
     role = fields.CharField(max_length=16, default="user")
+    register_date = fields.DatetimeField(auto_now_add=True)
 
     first_name = fields.CharField(max_length=30)
     last_name = fields.CharField(max_length=30)
     patronymic = fields.CharField(max_length=30)
+
+    about = fields.CharField(null=True, max_length=256)
+    birthday = fields.DatetimeField(null=True)
 
     def verify_password(self, password: str):
         return bcrypt.checkpw(password.encode(), self.password_hash.encode())

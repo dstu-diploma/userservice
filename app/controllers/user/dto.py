@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, StringConstraints
 from app.models.user import UserModel
 from typing import Annotated
@@ -16,6 +17,7 @@ class MinimalUserDto(BaseModel):
     first_name: str
     last_name: str
     patronymic: str
+    register_date: datetime
 
     @staticmethod
     def from_tortoise(user: UserModel):
@@ -24,20 +26,26 @@ class MinimalUserDto(BaseModel):
             first_name=user.first_name,
             last_name=user.last_name,
             patronymic=user.patronymic,
+            register_date=user.register_date,
         )
 
 
 class FullUserDto(MinimalUserDto):
     email: str
+    about: str | None
+    birthday: datetime | None
 
     @staticmethod
     def from_tortoise(user: UserModel):
         return FullUserDto(
             id=user.id,
-            email=user.email,
             first_name=user.first_name,
             last_name=user.last_name,
             patronymic=user.patronymic,
+            register_date=user.register_date,
+            email=user.email,
+            about=user.about,
+            birthday=user.birthday,
         )
 
 
@@ -47,6 +55,8 @@ class OptionalFullUserDataDto(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     patronymic: str | None = None
+    about: str | None = None
+    birthday: str | None = None
 
 
 class RegisteredUserDto(BaseModel):
