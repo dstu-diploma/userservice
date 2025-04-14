@@ -18,20 +18,22 @@ SALT = bcrypt.gensalt()
 class IUserController(Protocol):
     auth_controller: IAuthController
 
-    async def get_user_from_id(self, user_id: int): ...
-    async def create(self, password: str, dto: CreateUserDto): ...
-    async def login(self, email: str, password: str): ...
-    async def get_info(self, user_id: int): ...
+    async def create(
+        self, password: str, dto: CreateUserDto
+    ) -> RegisteredUserDto: ...
+    async def login(self, email: str, password: str) -> RegisteredUserDto: ...
+    async def get_minimal_info(self, user_id: int) -> MinimalUserDto: ...
+    async def get_full_info(self, user_id: int) -> FullUserDto: ...
     async def update_info(self, dto: OptionalFullUserDataDto): ...
-    async def delete(self, user_id: int): ...
-    async def get_all(self): ...
+    async def delete(self, user_id: int) -> None: ...
+    async def get_all(self) -> list[MinimalUserDto]: ...
 
 
 class UserController(IUserController):
     def __init__(self, auth_controller: IAuthController):
         self.auth_controller = auth_controller
 
-    async def get_user_from_id(self, user_id: int):
+    async def get_user_from_id(self, user_id: int) -> UserModel:
         user = await UserModel.get_or_none(id=user_id)
 
         if user is None:
@@ -41,7 +43,9 @@ class UserController(IUserController):
 
         return user
 
-    async def create(self, password: str, dto: CreateUserDto):
+    async def create(
+        self, password: str, dto: CreateUserDto
+    ) -> RegisteredUserDto:
         model = await UserModel.create(
             password_hash=bcrypt.hashpw(password.encode(), SALT).decode(),
             **dto.model_dump(),
@@ -55,7 +59,7 @@ class UserController(IUserController):
             refresh_token=tokens.refresh_token,
         )
 
-    async def login(self, email: str, password: str):
+    async def login(self, email: str, password: str) -> RegisteredUserDto:
         user = await UserModel.get_or_none(email=email)
 
         if user is None or not user.verify_password(password):
@@ -73,22 +77,26 @@ class UserController(IUserController):
             refresh_token=refresh_token,
         )
 
-    async def get_info(self, user_id: int):
+    async def get_minimal_info(self, user_id: int) -> MinimalUserDto:
+        user = await self.get_user_from_id(user_id)
+        return MinimalUserDto.from_tortoise(user)
+
+    async def get_full_info(self, user_id: int) -> FullUserDto:
         user = await self.get_user_from_id(user_id)
         return FullUserDto.from_tortoise(user)
 
-    async def update_info(self, dto: OptionalFullUserDataDto):
+    async def update_info(self, dto: OptionalFullUserDataDto) -> FullUserDto:
         user = await self.get_user_from_id(dto.id)
         user.update_from_dict(dto.model_dump(exclude_none=True))
 
         await user.save()
         return FullUserDto.from_tortoise(user)
 
-    async def delete(self, user_id: int):
+    async def delete(self, user_id: int) -> None:
         user = await self.get_user_from_id(user_id)
         await user.delete()
 
-    async def get_all(self):
+    async def get_all(self) -> list[MinimalUserDto]:
         users = await UserModel.all()
         return [MinimalUserDto.from_tortoise(user) for user in users]
 

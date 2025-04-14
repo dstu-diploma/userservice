@@ -10,6 +10,8 @@ from app.controllers.user import (
 from app.controllers.user.auth import AccessJWTPayloadDto, get_user_dto
 from fastapi import APIRouter, Depends, Query
 
+from app.controllers.user.dto import MinimalUserDto
+
 router = APIRouter(prefix="")
 
 
@@ -68,12 +70,16 @@ async def get_all(
 
 
 @router.get(
-    "/me",
-    response_model=FullUserDto,
-    description="Возвращает полные данные о текущем залогиненном пользователе",
+    "/{id}",
+    response_model=FullUserDto | MinimalUserDto,
+    description="Возвращает данные о пользователе с заданным ID. Если запрошенный совпадает с ID залогиненного пользователя, то вернутся полные данные",
 )
 async def get_me(
+    id: int,
     user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
     user_controller: UserController = Depends(get_user_controller),
 ):
-    return await user_controller.get_info(user_dto.user_id)
+    if id == user_dto.user_id:
+        return await user_controller.get_full_info(id)
+    else:
+        return await user_controller.get_minimal_info(id)
