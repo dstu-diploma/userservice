@@ -24,9 +24,11 @@ class IUserController(Protocol):
     async def login(self, email: str, password: str) -> RegisteredUserDto: ...
     async def get_minimal_info(self, user_id: int) -> MinimalUserDto: ...
     async def get_full_info(self, user_id: int) -> FullUserDto: ...
-    async def update_info(self, dto: OptionalFullUserDataDto): ...
+    async def update_info(self, user_id: int, dto: OptionalFullUserDataDto): ...
     async def delete(self, user_id: int) -> None: ...
-    async def get_all(self) -> list[MinimalUserDto]: ...
+    async def get_minimal_info_all(self) -> list[MinimalUserDto]: ...
+    async def get_full_info_all(self) -> list[FullUserDto]: ...
+    async def set_password(self, user_id: int, password: str) -> None: ...
 
 
 class UserController(IUserController):
@@ -90,8 +92,10 @@ class UserController(IUserController):
         user = await self.get_user_from_id(user_id)
         return FullUserDto.from_tortoise(user)
 
-    async def update_info(self, dto: OptionalFullUserDataDto) -> FullUserDto:
-        user = await self.get_user_from_id(dto.id)
+    async def update_info(
+        self, user_id: int, dto: OptionalFullUserDataDto
+    ) -> FullUserDto:
+        user = await self.get_user_from_id(user_id)
         user.update_from_dict(dto.model_dump(exclude_none=True))
 
         await user.save()
@@ -101,9 +105,18 @@ class UserController(IUserController):
         user = await self.get_user_from_id(user_id)
         await user.delete()
 
-    async def get_all(self) -> list[MinimalUserDto]:
+    async def get_minimal_info_all(self) -> list[MinimalUserDto]:
         users = await UserModel.all()
         return [MinimalUserDto.from_tortoise(user) for user in users]
+
+    async def get_full_info_all(self) -> list[FullUserDto]:
+        users = await UserModel.all()
+        return [FullUserDto.from_tortoise(user) for user in users]
+
+    async def set_password(self, user_id: int, password: str) -> None:
+        user = await self.get_user_from_id(user_id)
+        user.password_hash = bcrypt.hashpw(password.encode(), SALT).decode()
+        await user.save()
 
 
 # TODO: нормальный DI (Dishka)
