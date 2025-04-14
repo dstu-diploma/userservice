@@ -1,6 +1,6 @@
 from fastapi.security import OAuth2PasswordRequestForm
 from app.controllers.user import (
-    OptionalFullUserData,
+    OptionalFullUserDataDto,
     get_user_controller,
     UserController,
     CreateUserDto,
@@ -43,7 +43,7 @@ async def login(
     description="Обновляет некоторые данные о пользователе в СУБД",
 )
 async def update(
-    update_dto: OptionalFullUserData,
+    update_dto: OptionalFullUserDataDto,
     user_controller: UserController = Depends(get_user_controller),
 ):
     return await user_controller.update_info(update_dto)

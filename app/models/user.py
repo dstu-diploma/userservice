@@ -18,3 +18,24 @@ class UserModel(Model):
 
     class Meta:
         table: str = "users"
+
+
+class UserTokensModel(Model):
+    id = fields.IntField(pk=True)
+    token_revision = fields.IntField(default=0)
+    user: fields.ForeignKeyRelation = fields.ForeignKeyField(
+        "models.UserModel",
+        related_name="users",
+        unique=True,
+        on_delete=fields.CASCADE,
+    )
+
+    def verify_revision(self, rev: int):
+        return self.token_revision == rev
+
+    async def increase_revision(self):
+        self.token_revision += 1
+        await self.save(update_fields=("token_revision",))
+
+    class Meta:
+        table: str = "usertokens"
