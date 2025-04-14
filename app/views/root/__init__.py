@@ -18,7 +18,7 @@ router = APIRouter(prefix="")
 @router.post(
     "/",
     response_model=RegisteredUserDto,
-    description="Создает нового пользователя",
+    summary="Регистрация пользователя",
 )
 async def create(
     user_dto: CreateUserDto,

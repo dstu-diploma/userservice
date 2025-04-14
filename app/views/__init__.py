@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .user import router as user_router
+from .root import router as root_router
 
-main_router = APIRouter(tags=["UserService"])
-main_router.include_router(user_router)
+main_router = APIRouter(tags=["Основные"])
+main_router.include_router(root_router)
