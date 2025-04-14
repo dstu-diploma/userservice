@@ -1,23 +1,14 @@
+from app.controllers.auth.dto import AccessJWTPayloadDto
 from jose import ExpiredSignatureError, JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel
-from datetime import datetime
 from fastapi import Depends, HTTPException
+from pydantic import BaseModel
+from typing import Annotated
 from os import environ
 
 
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="/login")
 JWT_SECRET = environ.get("JWT_SECRET", "dstu")
-
-
-class AccessJWTPayloadDto(BaseModel):
-    user_id: int
-    role: str
-    exp: datetime
-
-
-class RefreshJWTPayloadDto(AccessJWTPayloadDto):
-    token_revision: int
 
 
 class UserJWTDto(BaseModel):
@@ -37,3 +28,23 @@ async def get_user_dto(
         raise HTTPException(
             status_code=403, detail="An error occured during JWT parsing!"
         )
+
+
+class UserWithRole:
+    allowed_roles: tuple[str, ...]
+    allowed_roles_str: str
+
+    def __init__(self, *allowed_roles: str):
+        self.allowed_roles = allowed_roles
+        self.allowed_roles_str = ", ".join(allowed_roles)
+
+    def __call__(
+        self, user_dto: Annotated[AccessJWTPayloadDto, Depends(get_user_dto)]
+    ) -> AccessJWTPayloadDto:
+        if user_dto.role in self.allowed_roles:
+            return user_dto
+        else:
+            raise HTTPException(
+                status_code=403,
+                detail=f"You dont have enough permissions. Allowed roles: {self.allowed_roles_str}",
+            )

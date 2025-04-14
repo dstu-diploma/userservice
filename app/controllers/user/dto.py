@@ -50,7 +50,6 @@ class FullUserDto(MinimalUserDto):
 
 
 class OptionalFullUserDataDto(BaseModel):
-    id: int
     email: str | None = None
     first_name: str | None = None
     last_name: str | None = None
