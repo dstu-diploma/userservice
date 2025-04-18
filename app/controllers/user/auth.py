@@ -4,10 +4,10 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 from typing import Annotated
-from os import environ
+from os import environ, path
 
-
-OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="/login")
+ROOT_PATH = environ.get('ROOT_PATH', '/')
+OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl=path.join(ROOT_PATH, "login"))
 JWT_SECRET = environ.get("JWT_SECRET", "dstu")
 
 
