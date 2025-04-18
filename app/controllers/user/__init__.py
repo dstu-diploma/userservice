@@ -48,7 +48,7 @@ class UserController(IUserController):
     async def create(
         self, password: str, dto: CreateUserDto
     ) -> RegisteredUserDto:
-        if UserModel.exists(email=dto.email):
+        if await UserModel.exists(email=dto.email):
             raise HTTPException(
                 status_code=403, detail="User with such email already exists!"
             )
