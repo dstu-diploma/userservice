@@ -1,19 +1,27 @@
+from fastapi.security import (
+    OAuth2PasswordBearer,
+    HTTPBearer,
+    HTTPAuthorizationCredentials,
+)
 from app.controllers.auth.dto import AccessJWTPayloadDto
 from jose import ExpiredSignatureError, JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer
+from .exceptions import InvalidTokenException
 from fastapi import Depends, HTTPException
-from pydantic import BaseModel
 from typing import Annotated
 from os import environ, path
 
-ROOT_PATH = environ.get('ROOT_PATH', '/')
+ROOT_PATH = environ.get("ROOT_PATH", "/")
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl=path.join(ROOT_PATH, "login"))
+SECURITY_SCHEME = HTTPBearer(auto_error=False)
 JWT_SECRET = environ.get("JWT_SECRET", "dstu")
 
 
-class UserJWTDto(BaseModel):
-    access_token: str
-    refresh_token: str
+def get_token_from_header(
+    credentials: HTTPAuthorizationCredentials = Depends(SECURITY_SCHEME),
+) -> str:
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise InvalidTokenException()
+    return credentials.credentials
 
 
 async def get_user_dto(

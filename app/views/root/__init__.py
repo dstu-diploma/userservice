@@ -1,6 +1,11 @@
-from app.controllers.user.auth import AccessJWTPayloadDto, get_user_dto
+from app.controllers.user.auth import (
+    AccessJWTPayloadDto,
+    get_user_dto,
+    get_token_from_header,
+)
 from fastapi.security import OAuth2PasswordRequestForm
 from app.controllers.user.dto import MinimalUserDto
+from app.controllers.auth import AuthController
 from fastapi import APIRouter, Depends
 from app.controllers.user import (
     OptionalFullUserDataDto,
@@ -37,6 +42,18 @@ async def login(
     user_controller: UserController = Depends(get_user_controller),
 ):
     return await user_controller.login(input.username, input.password)
+
+
+@router.post(
+    "/access_token",
+    response_model=str,
+    description="Возвращает новый AccessToken по переданному RefreshToken",
+)
+async def update_access_token(
+    token: str = Depends(get_token_from_header),
+    auth_controller: AuthController = Depends(),
+):
+    return await auth_controller.generate_access_token(token)
 
 
 @router.patch(

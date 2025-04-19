@@ -14,9 +14,7 @@ class IAuthController(Protocol):
     async def generate_key_pair(
         self, user_id: int, role: str
     ) -> tuple[str, str]: ...
-    async def generate_access_token(
-        self, user_id: int, refresh_token: str
-    ) -> str: ...
+    async def generate_access_token(self, refresh_token: str) -> str: ...
     async def generate_refresh_token(self, user_id: int, role: str) -> str: ...
     async def validate_refresh_token(
         self, token: str
@@ -36,13 +34,11 @@ class AuthController(IAuthController):
         self, user_id: int, role: str
     ) -> tuple[str, str]:
         refresh = await self.generate_refresh_token(user_id, role)
-        access = await self.generate_access_token(user_id, refresh)
+        access = await self.generate_access_token(refresh)
 
         return access, refresh
 
-    async def generate_access_token(
-        self, user_id: int, refresh_token: str
-    ) -> str:
+    async def generate_access_token(self, refresh_token: str) -> str:
         is_valid, refresh_payload = await self.validate_refresh_token(
             refresh_token
         )
@@ -50,11 +46,6 @@ class AuthController(IAuthController):
             raise HTTPException(
                 status_code=401,
                 detail="Refresh token is invalid! Please generate a new one",
-            )
-        elif refresh_payload.user_id != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="This token is owned by another user!",
             )
 
         payload = AccessJWTPayloadDto(
