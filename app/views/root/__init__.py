@@ -1,6 +1,7 @@
 from fastapi.security import OAuth2PasswordRequestForm
+from app.controllers.avatar import UserAvatarController
 from app.controllers.user.dto import MinimalUserDto
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile
 from app.controllers.user import (
     OptionalFullUserDataDto,
     get_user_controller,
@@ -92,3 +93,23 @@ async def get_me(
         return await user_controller.get_full_info(id)
     else:
         return await user_controller.get_minimal_info(id)
+
+
+@router.post(
+    "/avatar",
+    description="Загружает аватарку пользователю. Если у него уже есть аватарка, то заменит существующую",
+)
+async def upload_avatar(
+    file: UploadFile,
+    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    avatar_controller: UserAvatarController = Depends(),
+):
+    await avatar_controller.create(file, user_dto.user_id)
+
+
+@router.delete("/avatar", description="Удаляет аватарку пользователя.")
+def delete_avatar(
+    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    avatar_controller: UserAvatarController = Depends(),
+):
+    return avatar_controller.delete(user_dto.user_id)
