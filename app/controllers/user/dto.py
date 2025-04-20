@@ -32,6 +32,7 @@ class MinimalUserDto(BaseModel):
 
 class FullUserDto(MinimalUserDto):
     email: str
+    role: str
     about: str | None
     birthday: datetime | None
 
@@ -44,6 +45,7 @@ class FullUserDto(MinimalUserDto):
             patronymic=user.patronymic,
             register_date=user.register_date,
             email=user.email,
+            role=user.role,
             about=user.about,
             birthday=user.birthday,
         )
