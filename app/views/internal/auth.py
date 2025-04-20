@@ -17,3 +17,4 @@ def get_token_from_header(
         or credentials.credentials != API_KEY
     ):
         raise InvalidAuthException()
+    return credentials.credentials

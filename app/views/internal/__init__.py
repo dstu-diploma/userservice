@@ -27,5 +27,5 @@ async def search_user(
     controller: UserController = Depends(get_user_controller),
 ):
     return await controller.get_by_email_or_id(
-        search_params.id, SearchUserDto.email
+        search_params.id, search_params.email
     )
