@@ -2,7 +2,7 @@ from app.controllers.user.dto import FullUserDto, OptionalFullUserDataDto
 from app.controllers.user import UserController, get_user_controller
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.controllers.auth.dto import AccessJWTPayloadDto
-from app.controllers.user.auth import UserWithRole
+from app.controllers.auth import UserWithRole
 from .dto import PasswordDto
 
 

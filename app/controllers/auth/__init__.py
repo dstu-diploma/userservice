@@ -2,11 +2,27 @@ from .dto import AccessJWTPayloadDto, RefreshJWTPayloadDto, UserJWTDto
 from jose import ExpiredSignatureError, JWTError, jwt
 from datetime import datetime, timedelta
 from app.models import UserTokensModel
-from fastapi import HTTPException
+from os import environ, path
 from typing import Protocol
-from os import environ
+from fastapi import Depends
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    OAuth2PasswordBearer,
+    HTTPBearer,
+)
+from .exceptions import (
+    NoSuchTokenUserException,
+    RestrictedRolesException,
+    JWTParseErrorException,
+    InvalidTokenException,
+    TokenExpiredException,
+    InvalidTokenRevision,
+)
 
 JWT_SECRET = environ.get("JWT_SECRET", "zaza")
+ROOT_PATH = environ.get("ROOT_PATH", "/")
+OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl=path.join(ROOT_PATH, "login"))
+SECURITY_SCHEME = HTTPBearer(auto_error=False)
 
 
 class IAuthController(Protocol):
@@ -18,7 +34,7 @@ class IAuthController(Protocol):
     async def generate_refresh_token(self, user_id: int, role: str) -> str: ...
     async def validate_refresh_token(
         self, token: str
-    ) -> tuple[bool, RefreshJWTPayloadDto]: ...
+    ) -> RefreshJWTPayloadDto: ...
 
 
 class AuthController(IAuthController):
@@ -39,15 +55,7 @@ class AuthController(IAuthController):
         return access, refresh
 
     async def generate_access_token(self, refresh_token: str) -> str:
-        is_valid, refresh_payload = await self.validate_refresh_token(
-            refresh_token
-        )
-        if not is_valid:
-            raise HTTPException(
-                status_code=401,
-                detail="Refresh token is invalid! Please generate a new one",
-            )
-
+        refresh_payload = await self.validate_refresh_token(refresh_token)
         payload = AccessJWTPayloadDto(
             user_id=refresh_payload.user_id,
             role=refresh_payload.role,
@@ -76,31 +84,61 @@ class AuthController(IAuthController):
             JWT_SECRET,
         )
 
-    async def validate_refresh_token(
-        self, token: str
-    ) -> tuple[bool, RefreshJWTPayloadDto]:
+    async def validate_refresh_token(self, token: str) -> RefreshJWTPayloadDto:
         try:
             raw_payload = jwt.decode(token, JWT_SECRET)
             payload = RefreshJWTPayloadDto(**raw_payload)
             user = await self._get_user_by_id(payload.user_id)
 
-            return user.verify_revision(payload.token_revision), payload
+            if not user.verify_revision(payload.token_revision):
+                raise InvalidTokenRevision()
+
+            return payload
         except ExpiredSignatureError:
-            raise HTTPException(
-                status_code=403, detail="Refresh token has expired!"
-            )
+            raise TokenExpiredException()
         except JWTError:
-            raise HTTPException(
-                status_code=403, detail="An error occured during JWT parsing!"
-            )
+            raise JWTParseErrorException()
 
     async def _get_user_by_id(self, user_id: int):
         user = await UserTokensModel.get_or_none(user_id=user_id)
 
         if user is None:
-            raise HTTPException(
-                status_code=404,
-                detail="User with providen UserID does not exists!",
-            )
-
+            raise NoSuchTokenUserException()
         return user
+
+
+def get_token_from_header(
+    credentials: HTTPAuthorizationCredentials = Depends(SECURITY_SCHEME),
+) -> str:
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise InvalidTokenException()
+    return credentials.credentials
+
+
+async def get_user_dto(
+    access_token: str = Depends(OAUTH2_SCHEME),
+) -> AccessJWTPayloadDto:
+    try:
+        raw_payload = jwt.decode(access_token, JWT_SECRET)
+        return AccessJWTPayloadDto(**raw_payload)
+    except ExpiredSignatureError:
+        raise TokenExpiredException()
+    except JWTError:
+        raise JWTParseErrorException()
+
+
+class UserWithRole:
+    allowed_roles: tuple[str, ...]
+    allowed_roles_str: str
+
+    def __init__(self, *allowed_roles: str):
+        self.allowed_roles = allowed_roles
+        self.allowed_roles_str = ", ".join(allowed_roles)
+
+    def __call__(
+        self, user_dto: AccessJWTPayloadDto = Depends(get_user_dto)
+    ) -> AccessJWTPayloadDto:
+        if user_dto.role in self.allowed_roles:
+            return user_dto
+        else:
+            raise RestrictedRolesException(self.allowed_roles_str)

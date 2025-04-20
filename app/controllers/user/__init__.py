@@ -1,7 +1,8 @@
 from app.controllers.auth import IAuthController, AuthController
-from fastapi import HTTPException, Depends
 from app.models import UserModel
+from fastapi import Depends
 from typing import Protocol
+import bcrypt
 from .dto import (
     OptionalFullUserDataDto,
     RegisteredUserDto,
@@ -9,7 +10,11 @@ from .dto import (
     CreateUserDto,
     FullUserDto,
 )
-import bcrypt
+from .exceptions import (
+    UserWithThatEmailExistsException,
+    InvalidLoginCredentialsException,
+    NoSuchUserException,
+)
 
 
 SALT = bcrypt.gensalt()
@@ -42,9 +47,7 @@ class UserController(IUserController):
         user = await UserModel.get_or_none(id=user_id)
 
         if user is None:
-            raise HTTPException(
-                status_code=404, detail="No user with such UserID!"
-            )
+            raise NoSuchUserException()
 
         return user
 
@@ -52,9 +55,7 @@ class UserController(IUserController):
         self, password: str, dto: CreateUserDto
     ) -> RegisteredUserDto:
         if await UserModel.exists(email=dto.email):
-            raise HTTPException(
-                status_code=403, detail="User with such email already exists!"
-            )
+            raise UserWithThatEmailExistsException()
 
         model = await UserModel.create(
             password_hash=bcrypt.hashpw(password.encode(), SALT).decode(),
@@ -73,9 +74,7 @@ class UserController(IUserController):
         user = await UserModel.get_or_none(email=email)
 
         if user is None or not user.verify_password(password):
-            raise HTTPException(
-                status_code=403, detail="Invalid email or password!"
-            )
+            raise InvalidLoginCredentialsException()
 
         access_token, refresh_token = (
             await self.auth_controller.generate_key_pair(user.id, user.role)
@@ -127,7 +126,11 @@ class UserController(IUserController):
         user = await UserModel.get_or_none(email=email)
         if user:
             return MinimalUserDto.from_tortoise(user)
-        return await self.get_user_from_id(user_id)
+        if user_id:
+            return MinimalUserDto.from_tortoise(
+                await self.get_user_from_id(user_id)
+            )
+        raise NoSuchUserException()
 
 
 # TODO: нормальный DI (Dishka)

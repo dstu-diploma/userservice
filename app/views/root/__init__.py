@@ -1,21 +1,20 @@
-from app.controllers.user.auth import (
-    AccessJWTPayloadDto,
-    get_user_dto,
-    get_token_from_header,
-)
 from fastapi.security import OAuth2PasswordRequestForm
 from app.controllers.user.dto import MinimalUserDto
-from app.controllers.auth import AuthController
 from fastapi import APIRouter, Depends
 from app.controllers.user import (
     OptionalFullUserDataDto,
     get_user_controller,
+    RegisteredUserDto,
     UserController,
     CreateUserDto,
     FullUserDto,
-    RegisteredUserDto,
 )
-
+from app.controllers.auth import (
+    get_token_from_header,
+    AccessJWTPayloadDto,
+    AuthController,
+    get_user_dto,
+)
 
 router = APIRouter(tags=["Основное"], prefix="")
 
