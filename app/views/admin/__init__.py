@@ -13,48 +13,68 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/", summary="Список пользователей")
 async def get_all(
     user_controller: UserController = Depends(get_user_controller),
 ):
+    """
+    Возвращает список всех зарегистрированных пользователей.
+    """
     return await user_controller.get_full_info_all()
 
 
-@router.get("/{id}", response_model=FullUserDto)
+@router.get(
+    "/{id}", response_model=FullUserDto, summary="Информация о пользователе"
+)
 async def get_user_by_id(
-    user_id: int = Query(..., gt=0),
+    id: int,
     user_controller: UserController = Depends(get_user_controller),
 ):
-    return await user_controller.get_full_info(user_id)
+    """
+    Возвращает информацию о конкретном пользователе.
+    """
+    return await user_controller.get_full_info(id)
 
 
 @router.patch(
     "/{id}",
     response_model=FullUserDto,
+    summary="Изменение данных о пользователе",
 )
 async def update(
+    id: int,
     update_dto: OptionalFullUserDataDto,
-    user_id: int = Query(..., gt=0),
     user_controller: UserController = Depends(get_user_controller),
 ):
-    return await user_controller.update_info(user_id, update_dto)
+    """
+    Позволяет изменить часть (или все) данных о пользователе.
+    """
+    return await user_controller.update_info(id, update_dto)
 
 
-@router.patch("/{id}/password")
+@router.patch("/{id}/password", summary="Изменение пароля")
 async def update_password(
+    id: int,
     dto: PasswordDto,
-    user_id: int = Query(..., gt=0),
     user_controller: UserController = Depends(get_user_controller),
 ):
-    return await user_controller.set_password(user_id, dto.password)
+    """
+    Позволяет изменить пароль пользователю.
+    """
+    return await user_controller.set_password(id, dto.password)
 
 
-@router.delete("/", description="Удаляет пользователя из СУБД")
+@router.delete("/{id}", summary="Удаление пользователя")
 async def delete(
-    user_id: int = Query(..., gt=0),
+    id: int,
     admin: AccessJWTPayloadDto = Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
 ):
-    if admin.user_id == user_id:
-        raise HTTPException(status_code=403, detail="You cant delete yourself!")
-    return await user_controller.delete(user_id)
+    """
+    Полностью удаляет пользователя из системы.
+    """
+    if admin.user_id == id:
+        raise HTTPException(
+            status_code=403, detail="Вы не можете удалить самого себя!"
+        )
+    return await user_controller.delete(id)
