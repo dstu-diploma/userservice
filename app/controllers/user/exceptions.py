@@ -8,6 +8,13 @@ class NoSuchUserException(HTTPException):
         )
 
 
+class NoUserWithSuchEmailException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=404, detail="Пользователя с данным Email не существует!"
+        )
+
+
 class UserWithThatEmailExistsException(HTTPException):
     def __init__(self):
         super().__init__(

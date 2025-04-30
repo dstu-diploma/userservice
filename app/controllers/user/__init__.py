@@ -11,6 +11,7 @@ from .dto import (
     FullUserDto,
 )
 from .exceptions import (
+    NoUserWithSuchEmailException,
     UserWithThatEmailExistsException,
     InvalidLoginCredentialsException,
     NoSuchUserException,
@@ -34,9 +35,7 @@ class IUserController(Protocol):
     async def get_minimal_info_all(self) -> list[MinimalUserDto]: ...
     async def get_full_info_all(self) -> list[FullUserDto]: ...
     async def set_password(self, user_id: int, password: str) -> None: ...
-    async def get_by_email_or_id(
-        self, user_id: int | None, email: str | None
-    ) -> MinimalUserDto: ...
+    async def get_by_email(self, email: str) -> MinimalUserDto: ...
 
 
 class UserController(IUserController):
@@ -120,17 +119,12 @@ class UserController(IUserController):
         user.password_hash = bcrypt.hashpw(password.encode(), SALT).decode()
         await user.save()
 
-    async def get_by_email_or_id(
-        self, user_id: int | None, email: str | None
-    ) -> MinimalUserDto:
+    async def get_by_email(self, email: str) -> MinimalUserDto:
         user = await UserModel.get_or_none(email=email)
         if user:
             return MinimalUserDto.from_tortoise(user)
-        if user_id:
-            return MinimalUserDto.from_tortoise(
-                await self.get_user_from_id(user_id)
-            )
-        raise NoSuchUserException()
+
+        raise NoUserWithSuchEmailException()
 
 
 # TODO: нормальный DI (Dishka)

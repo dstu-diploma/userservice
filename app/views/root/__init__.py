@@ -1,7 +1,7 @@
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, Query, UploadFile
 from app.controllers.avatar import UserAvatarController
+from fastapi.security import OAuth2PasswordRequestForm
 from app.controllers.user.dto import MinimalUserDto
-from fastapi import APIRouter, Depends, UploadFile
 from app.controllers.user import (
     OptionalFullUserDataDto,
     get_user_controller,
@@ -84,7 +84,7 @@ async def update(
 
 
 @router.get(
-    "/{id}",
+    "/info/{id}",
     response_model=FullUserDto | MinimalUserDto,
     summary="Получение данных о пользователе",
 )
@@ -100,6 +100,19 @@ async def get_me(
         return await user_controller.get_full_info(id)
     else:
         return await user_controller.get_minimal_info(id)
+
+
+@router.get("/search-by-email", summary="Поиск пользователя")
+async def search_user(
+    email: str = Query(...),
+    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    controller: UserController = Depends(get_user_controller),
+):
+    """
+    Позволяет найти пользователя по его ID/Email.
+    Если пользователя не существует, то вернет 404.
+    """
+    return await controller.get_by_email(email)
 
 
 @router.put(
