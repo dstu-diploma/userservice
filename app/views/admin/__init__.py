@@ -6,15 +6,12 @@ from app.controllers.auth import UserWithRole
 from .dto import PasswordDto
 
 
-router = APIRouter(
-    tags=["Админка"],
-    prefix="/admin",
-    dependencies=(Depends(UserWithRole("admin")),),
-)
+router = APIRouter(tags=["Админка"], prefix="/admin")
 
 
 @router.get("/", summary="Список пользователей")
 async def get_all(
+    _=Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -28,6 +25,7 @@ async def get_all(
 )
 async def get_user_by_id(
     id: int,
+    _=Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -44,6 +42,7 @@ async def get_user_by_id(
 async def update(
     id: int,
     update_dto: OptionalFullUserDataDto,
+    _=Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -56,6 +55,7 @@ async def update(
 async def update_password(
     id: int,
     dto: PasswordDto,
+    _=Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
