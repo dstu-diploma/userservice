@@ -17,6 +17,8 @@ from app.controllers.auth import (
     get_user_dto,
 )
 
+from .dto import AccessTokenDto
+
 router = APIRouter(tags=["Основное"], prefix="")
 
 
@@ -52,7 +54,7 @@ async def login(
 
 @router.post(
     "/access_token",
-    response_model=str,
+    response_model=AccessTokenDto,
     summary="Получение Access-токена",
 )
 async def update_access_token(
@@ -62,7 +64,9 @@ async def update_access_token(
     """
     Выпускает новый Access-токен для текущего пользователя. В заголовке Authorization должен находиться актуальный Refresh-токен.
     """
-    return await auth_controller.generate_access_token(token)
+    return AccessTokenDto(
+        access_token=await auth_controller.generate_access_token(token)
+    )
 
 
 @router.patch(
