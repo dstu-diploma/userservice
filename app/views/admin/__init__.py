@@ -21,26 +21,28 @@ async def get_all(
 
 
 @router.get(
-    "/{id}", response_model=FullUserDto, summary="Информация о пользователе"
+    "/{user_id}",
+    response_model=FullUserDto,
+    summary="Информация о пользователе",
 )
 async def get_user_by_id(
-    id: int,
+    user_id: int,
     _=Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
     Возвращает информацию о конкретном пользователе.
     """
-    return await user_controller.get_full_info(id)
+    return await user_controller.get_full_info(user_id)
 
 
 @router.patch(
-    "/{id}",
+    "/{user_id}",
     response_model=FullUserDto,
     summary="Изменение данных о пользователе",
 )
 async def update(
-    id: int,
+    user_id: int,
     update_dto: OptionalFullUserDataDto,
     _=Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
@@ -48,12 +50,12 @@ async def update(
     """
     Позволяет изменить часть (или все) данных о пользователе.
     """
-    return await user_controller.update_info(id, update_dto)
+    return await user_controller.update_info(user_id, update_dto)
 
 
-@router.patch("/{id}/password", summary="Изменение пароля")
+@router.patch("/{user_id}/password", summary="Изменение пароля")
 async def update_password(
-    id: int,
+    user_id: int,
     dto: PasswordDto,
     _=Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
@@ -61,20 +63,20 @@ async def update_password(
     """
     Позволяет изменить пароль пользователю.
     """
-    return await user_controller.set_password(id, dto.password)
+    return await user_controller.set_password(user_id, dto.password)
 
 
-@router.delete("/{id}", summary="Удаление пользователя")
+@router.delete("/{user_id}", summary="Удаление пользователя")
 async def delete(
-    id: int,
+    user_id: int,
     admin: AccessJWTPayloadDto = Depends(UserWithRole("admin")),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
     Полностью удаляет пользователя из системы.
     """
-    if admin.user_id == id:
+    if admin.user_id == user_id:
         raise HTTPException(
             status_code=403, detail="Вы не можете удалить самого себя!"
         )
-    return await user_controller.delete(id)
+    return await user_controller.delete(user_id)

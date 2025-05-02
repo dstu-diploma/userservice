@@ -84,22 +84,22 @@ async def update(
 
 
 @router.get(
-    "/info/{id}",
+    "/info/{user_id}",
     response_model=FullUserDto | MinimalUserDto,
     summary="Получение данных о пользователе",
 )
 async def get_info(
-    id: int,
+    user_id: int,
     user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
     Возвращает данные о пользователе с заданным ID. Если запрошенный совпадает с ID залогиненного пользователя, то вернутся полные данные.
     """
-    if id == user_dto.user_id:
-        return await user_controller.get_full_info(id)
+    if user_id == user_dto.user_id:
+        return await user_controller.get_full_info(user_id)
     else:
-        return await user_controller.get_minimal_info(id)
+        return await user_controller.get_minimal_info(user_id)
 
 
 @router.get(
