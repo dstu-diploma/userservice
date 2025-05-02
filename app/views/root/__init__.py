@@ -88,7 +88,7 @@ async def update(
     response_model=FullUserDto | MinimalUserDto,
     summary="Получение данных о пользователе",
 )
-async def get_me(
+async def get_info(
     id: int,
     user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
     user_controller: UserController = Depends(get_user_controller),
@@ -100,6 +100,22 @@ async def get_me(
         return await user_controller.get_full_info(id)
     else:
         return await user_controller.get_minimal_info(id)
+
+
+@router.get(
+    "/info-many",
+    response_model=list[MinimalUserDto],
+    summary="Получение данных о пользователях",
+)
+async def get_info_many(
+    user_ids: list[int],
+    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    user_controller: UserController = Depends(get_user_controller),
+):
+    """
+    Возвращает данные о пользователях с заданными ID. Если какого то из пользователей не существует, то он не попадет в список.
+    """
+    return user_controller.get_minimal_info_many(user_ids)
 
 
 @router.get("/search-by-email", summary="Поиск пользователя")
