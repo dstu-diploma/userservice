@@ -102,7 +102,7 @@ async def get_info(
         return await user_controller.get_minimal_info(user_id)
 
 
-@router.get(
+@router.post(
     "/info-many",
     response_model=list[MinimalUserDto],
     summary="Получение данных о пользователях",
