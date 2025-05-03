@@ -115,7 +115,7 @@ async def get_info_many(
     """
     Возвращает данные о пользователях с заданными ID. Если какого то из пользователей не существует, то он не попадет в список.
     """
-    return user_controller.get_minimal_info_many(user_ids)
+    return await user_controller.get_minimal_info_many(user_ids)
 
 
 @router.get("/search-by-email", summary="Поиск пользователя")
