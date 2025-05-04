@@ -59,7 +59,7 @@ class AuthController(IAuthController):
         payload = AccessJWTPayloadDto(
             user_id=refresh_payload.user_id,
             role=refresh_payload.role,
-            exp=datetime.now() + timedelta(minutes=10),
+            exp=datetime.now() + timedelta(minutes=20),
         )
 
         return jwt.encode(
