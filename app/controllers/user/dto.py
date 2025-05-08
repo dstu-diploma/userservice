@@ -57,7 +57,7 @@ class OptionalFullUserDataDto(BaseModel):
     last_name: str | None = None
     patronymic: str | None = None
     about: str | None = None
-    birthday: str | None = None
+    birthday: datetime | None = None
 
 
 class RegisteredUserDto(BaseModel):
