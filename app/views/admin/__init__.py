@@ -1,10 +1,10 @@
-from app.controllers.user.dto import FullUserDto, OptionalFullUserDataDto
 from app.controllers.user import UserController, get_user_controller
 from app.controllers.auth.dto import AccessJWTPayloadDto
 from app.controllers.auth import PermittedAction
+from app.controllers.user.dto import FullUserDto
+from .dto import OptionalAdminFullUserDataDto
 from app.acl.permissions import Permissions
 from fastapi import APIRouter, Depends
-from .dto import PasswordDto, RoleDto
 
 from app.views.admin.exceptions import (
     CantChangeSelfRoleException,
@@ -48,51 +48,29 @@ async def get_user_by_id(
 )
 async def update(
     user_id: int,
-    update_dto: OptionalFullUserDataDto,
-    _=Depends(PermittedAction(Permissions.UpdateAnyUser)),
-    user_controller: UserController = Depends(get_user_controller),
-):
-    """
-    Позволяет изменить часть (или все) данных о пользователе.
-    """
-    return await user_controller.update_info(user_id, update_dto)
-
-
-@router.put(
-    "/{user_id}/password",
-    response_model=FullUserDto,
-    summary="Изменение пароля",
-)
-async def update_password(
-    user_id: int,
-    dto: PasswordDto,
-    _=Depends(PermittedAction(Permissions.UpdateAnyUser)),
-    user_controller: UserController = Depends(get_user_controller),
-):
-    """
-    Позволяет изменить пароль пользователю.
-    """
-    return await user_controller.set_password(user_id, dto.password)
-
-
-@router.put(
-    "/{user_id}/role", response_model=FullUserDto, summary="Изменение роли"
-)
-async def update_role(
-    user_id: int,
-    dto: RoleDto,
+    dto: OptionalAdminFullUserDataDto,
     admin: AccessJWTPayloadDto = Depends(
-        PermittedAction(Permissions.UpdateRole)
+        PermittedAction(Permissions.UpdateAnyUser)
     ),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
-    Позволяет изменить роль пользователю. Самому себе менять роль нельзя.
+    Позволяет изменить часть (или все) данных о пользователе.
+    Самому себе менять роль нельзя.
     """
-    if admin.user_id == user_id:
-        raise CantChangeSelfRoleException()
 
-    return await user_controller.set_role(user_id, dto.role)
+    if dto.role is not None:
+        if admin.user_id == user_id:
+            raise CantChangeSelfRoleException()
+
+        await user_controller.set_role(user_id, dto.role)
+        dto.role = None
+
+    if dto.password is not None:
+        await user_controller.set_password(user_id, dto.password)
+        dto.password = None
+
+    return await user_controller.update_info(user_id, dto)
 
 
 @router.delete("/{user_id}", summary="Удаление пользователя")
