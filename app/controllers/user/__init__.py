@@ -3,6 +3,7 @@ from app.models import UserModel
 from fastapi import Depends
 from typing import Protocol
 import bcrypt
+
 from .dto import (
     OptionalFullUserDataDto,
     RegisteredUserDto,

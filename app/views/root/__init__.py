@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, Query, UploadFile
 from app.controllers.avatar import UserAvatarController
 from fastapi.security import OAuth2PasswordRequestForm
 from app.controllers.user.dto import MinimalUserDto
+from app.acl.permissions import Permissions
+from .dto import AccessTokenDto
+
 from app.controllers.user import (
     OptionalFullUserDataDto,
     get_user_controller,
@@ -10,14 +13,13 @@ from app.controllers.user import (
     CreateUserDto,
     FullUserDto,
 )
+
 from app.controllers.auth import (
     get_token_from_header,
     AccessJWTPayloadDto,
+    PermittedAction,
     AuthController,
-    get_user_dto,
 )
-
-from .dto import AccessTokenDto
 
 router = APIRouter(tags=["Основное"], prefix="")
 
@@ -74,7 +76,9 @@ async def update_access_token(
 )
 async def update(
     update_dto: OptionalFullUserDataDto,
-    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.UpdateSelf)
+    ),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -90,7 +94,9 @@ async def update(
 )
 async def get_info(
     user_id: int,
-    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.GetUserMinimalInfo)
+    ),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -109,7 +115,9 @@ async def get_info(
 )
 async def get_info_many(
     user_ids: list[int],
-    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.GetUserMinimalInfo)
+    ),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -121,7 +129,9 @@ async def get_info_many(
 @router.get("/search-by-email", summary="Поиск пользователя")
 async def search_user(
     email: str = Query(...),
-    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.SearchUserMinimalInfo)
+    ),
     controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -137,7 +147,9 @@ async def search_user(
 )
 async def upload_avatar(
     file: UploadFile,
-    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.UpdateSelf)
+    ),
     avatar_controller: UserAvatarController = Depends(),
 ):
     """
@@ -148,7 +160,9 @@ async def upload_avatar(
 
 @router.delete("/avatar", summary="Удаление аватарки")
 def delete_avatar(
-    user_dto: AccessJWTPayloadDto = Depends(get_user_dto),
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.UpdateSelf)
+    ),
     avatar_controller: UserAvatarController = Depends(),
 ):
     """

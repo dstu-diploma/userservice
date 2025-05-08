@@ -1,10 +1,14 @@
 from .dto import AccessJWTPayloadDto, RefreshJWTPayloadDto, UserJWTDto
+from app.acl.permissions import PermissionAcl, perform_check
 from jose import ExpiredSignatureError, JWTError, jwt
 from datetime import datetime, timedelta
 from app.models import UserTokensModel
+from typing import Annotated, Protocol
+from app.acl.roles import UserRoles
 from os import environ, path
-from typing import Protocol
+
 from fastapi import Depends
+
 from fastapi.security import (
     HTTPAuthorizationCredentials,
     OAuth2PasswordBearer,
@@ -12,7 +16,7 @@ from fastapi.security import (
 )
 from .exceptions import (
     NoSuchTokenUserException,
-    RestrictedRolesException,
+    RestrictedPermissionException,
     JWTParseErrorException,
     InvalidTokenException,
     TokenExpiredException,
@@ -26,12 +30,14 @@ SECURITY_SCHEME = HTTPBearer(auto_error=False)
 
 
 class IAuthController(Protocol):
-    async def init_user(self, user_id: int, role: str) -> UserJWTDto: ...
+    async def init_user(self, user_id: int, role: UserRoles) -> UserJWTDto: ...
     async def generate_key_pair(
-        self, user_id: int, role: str
+        self, user_id: int, role: UserRoles
     ) -> tuple[str, str]: ...
     async def generate_access_token(self, refresh_token: str) -> str: ...
-    async def generate_refresh_token(self, user_id: int, role: str) -> str: ...
+    async def generate_refresh_token(
+        self, user_id: int, role: UserRoles
+    ) -> str: ...
     async def validate_refresh_token(
         self, token: str
     ) -> RefreshJWTPayloadDto: ...
@@ -41,13 +47,13 @@ class AuthController(IAuthController):
     def __init__(self):
         pass
 
-    async def init_user(self, user_id: int, role: str) -> UserJWTDto:
+    async def init_user(self, user_id: int, role: UserRoles) -> UserJWTDto:
         await UserTokensModel.create(user_id=user_id)
         access, refresh = await self.generate_key_pair(user_id, role)
         return UserJWTDto(access_token=access, refresh_token=refresh)
 
     async def generate_key_pair(
-        self, user_id: int, role: str
+        self, user_id: int, role: UserRoles
     ) -> tuple[str, str]:
         refresh = await self.generate_refresh_token(user_id, role)
         access = await self.generate_access_token(refresh)
@@ -67,7 +73,9 @@ class AuthController(IAuthController):
             JWT_SECRET,
         )
 
-    async def generate_refresh_token(self, user_id: int, role: str) -> str:
+    async def generate_refresh_token(
+        self, user_id: int, role: UserRoles
+    ) -> str:
         user = await self._get_user_by_id(user_id)
         await user.increase_revision()
 
@@ -127,18 +135,16 @@ async def get_user_dto(
         raise JWTParseErrorException()
 
 
-class UserWithRole:
-    allowed_roles: tuple[str, ...]
-    allowed_roles_str: str
+class PermittedAction:
+    acl: PermissionAcl
 
-    def __init__(self, *allowed_roles: str):
-        self.allowed_roles = allowed_roles
-        self.allowed_roles_str = ", ".join(allowed_roles)
+    def __init__(self, acl: PermissionAcl):
+        self.acl = acl
 
     def __call__(
-        self, user_dto: AccessJWTPayloadDto = Depends(get_user_dto)
-    ) -> AccessJWTPayloadDto:
-        if user_dto.role in self.allowed_roles:
+        self, user_dto: Annotated[AccessJWTPayloadDto, Depends(get_user_dto)]
+    ):
+        if perform_check(self.acl, user_dto.role):
             return user_dto
-        else:
-            raise RestrictedRolesException(self.allowed_roles_str)
+
+        raise RestrictedPermissionException()

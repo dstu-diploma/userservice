@@ -1,3 +1,4 @@
+from app.acl.roles import UserRoles
 from tortoise.models import Model
 from tortoise import fields
 import bcrypt
@@ -7,7 +8,9 @@ class UserModel(Model):
     id = fields.IntField(pk=True)
     email = fields.CharField(null=False, max_length=60, unique=True)
     password_hash = fields.CharField(max_length=128)
-    role = fields.CharField(max_length=16, default="user")
+    role = fields.CharEnumField(
+        enum_type=UserRoles, max_length=16, default=UserRoles.User
+    )
     register_date = fields.DatetimeField(auto_now_add=True)
 
     first_name = fields.CharField(max_length=30)

@@ -1,8 +1,9 @@
 from app.controllers.user.dto import FullUserDto, OptionalFullUserDataDto
 from app.controllers.user import UserController, get_user_controller
-from fastapi import APIRouter, Depends, HTTPException, Query
 from app.controllers.auth.dto import AccessJWTPayloadDto
-from app.controllers.auth import UserWithRole
+from fastapi import APIRouter, Depends, HTTPException
+from app.controllers.auth import PermittedAction
+from app.acl.permissions import Permissions
 from .dto import PasswordDto
 
 
@@ -11,7 +12,7 @@ router = APIRouter(tags=["Админка"], prefix="/admin")
 
 @router.get("/", summary="Список пользователей")
 async def get_all(
-    _=Depends(UserWithRole("admin")),
+    _=Depends(PermittedAction(Permissions.GetUserFullInfo)),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -27,7 +28,7 @@ async def get_all(
 )
 async def get_user_by_id(
     user_id: int,
-    _=Depends(UserWithRole("admin")),
+    _=Depends(PermittedAction(Permissions.GetUserFullInfo)),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -44,7 +45,7 @@ async def get_user_by_id(
 async def update(
     user_id: int,
     update_dto: OptionalFullUserDataDto,
-    _=Depends(UserWithRole("admin")),
+    _=Depends(PermittedAction(Permissions.UpdateAnyUser)),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -57,7 +58,7 @@ async def update(
 async def update_password(
     user_id: int,
     dto: PasswordDto,
-    _=Depends(UserWithRole("admin")),
+    _=Depends(PermittedAction(Permissions.UpdateAnyUser)),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
@@ -69,7 +70,9 @@ async def update_password(
 @router.delete("/{user_id}", summary="Удаление пользователя")
 async def delete(
     user_id: int,
-    admin: AccessJWTPayloadDto = Depends(UserWithRole("admin")),
+    admin: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.DeleteUser)
+    ),
     user_controller: UserController = Depends(get_user_controller),
 ):
     """
