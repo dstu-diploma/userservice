@@ -1,8 +1,10 @@
 from app.controllers.auth import IAuthController, AuthController
+from app.acl.roles import UserRoles
 from app.models import UserModel
 from fastapi import Depends
 from typing import Protocol
 import bcrypt
+
 
 from .dto import (
     OptionalFullUserDataDto,
@@ -38,7 +40,10 @@ class IUserController(Protocol):
     async def delete(self, user_id: int) -> None: ...
     async def get_minimal_info_all(self) -> list[MinimalUserDto]: ...
     async def get_full_info_all(self) -> list[FullUserDto]: ...
-    async def set_password(self, user_id: int, password: str) -> None: ...
+    async def set_password(
+        self, user_id: int, password: str
+    ) -> FullUserDto: ...
+    async def set_role(self, user_id: int, role: UserRoles) -> FullUserDto: ...
     async def get_by_email(self, email: str) -> MinimalUserDto: ...
 
 
@@ -124,10 +129,17 @@ class UserController(IUserController):
         users = await UserModel.all()
         return [FullUserDto.from_tortoise(user) for user in users]
 
-    async def set_password(self, user_id: int, password: str) -> None:
+    async def set_password(self, user_id: int, password: str) -> FullUserDto:
         user = await self.get_user_from_id(user_id)
         user.password_hash = bcrypt.hashpw(password.encode(), SALT).decode()
         await user.save()
+        return FullUserDto.from_tortoise(user)
+
+    async def set_role(self, user_id: int, role: UserRoles) -> FullUserDto:
+        user = await self.get_user_from_id(user_id)
+        user.role = role
+        await user.save()
+        return FullUserDto.from_tortoise(user)
 
     async def get_by_email(self, email: str) -> MinimalUserDto:
         user = await UserModel.get_or_none(email=email)
