@@ -26,3 +26,11 @@ class UserWithThatEmailExistsException(HTTPException):
 class InvalidLoginCredentialsException(HTTPException):
     def __init__(self):
         super().__init__(status_code=403, detail="Неверный логин или пароль!")
+
+
+class UserIsBannedException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=403,
+            detail="Учетная запись этого пользователя заблокирована!",
+        )

@@ -24,6 +24,7 @@ class Permissions:
 
     GetUserFullInfo = __PRIVILEGED
     UpdateAnyUser = __PRIVILEGED
+    BanUser = __PRIVILEGED
     DeleteUser = UserRoles.Admin
     UpdateRole = UserRoles.Admin
 

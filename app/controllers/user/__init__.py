@@ -1,6 +1,7 @@
 from app.controllers.auth import IAuthController, AuthController
 from app.acl.roles import UserRoles
 from app.models import UserModel
+from functools import lru_cache
 from fastapi import Depends
 from typing import Protocol
 import bcrypt
@@ -15,6 +16,7 @@ from .dto import (
 )
 from .exceptions import (
     NoUserWithSuchEmailException,
+    UserIsBannedException,
     UserWithThatEmailExistsException,
     InvalidLoginCredentialsException,
     NoSuchUserException,
@@ -84,6 +86,9 @@ class UserController(IUserController):
         if user is None or not user.verify_password(password):
             raise InvalidLoginCredentialsException()
 
+        if user.is_banned:
+            raise UserIsBannedException()
+
         access_token, refresh_token = (
             await self.auth_controller.generate_key_pair(user.id, user.role)
         )
@@ -148,9 +153,20 @@ class UserController(IUserController):
 
         raise NoUserWithSuchEmailException()
 
+    async def set_is_banned(self, user_id: int, is_banned: bool) -> FullUserDto:
+        user = await self.get_user_from_id(user_id)
+        user.is_banned = is_banned
+        await user.save()
 
-# TODO: нормальный DI (Dishka)
-# текущая реализация будет создавать по два объекта при каждом входе в эндпоинт, хотя эти зависимости должны быть на уровне приложения
+        # генерация рефреш токена нужна, чтобы поднять ревизию
+        # все старые токены станут невалидными,
+        # и забаненный пользователь не сможет даже зайти в аккаунт
+        await self.auth_controller.generate_refresh_token(user.id, user.role)
+
+        return FullUserDto.from_tortoise(user)
+
+
+@lru_cache
 def get_user_controller(
     controller: AuthController = Depends(),
 ) -> UserController:

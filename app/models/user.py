@@ -20,6 +20,8 @@ class UserModel(Model):
     about = fields.CharField(null=True, max_length=256)
     birthday = fields.DatetimeField(null=True)
 
+    is_banned = fields.BooleanField(default=False)
+
     def verify_password(self, password: str):
         return bcrypt.checkpw(password.encode(), self.password_hash.encode())
 

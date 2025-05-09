@@ -4,10 +4,11 @@ from app.acl.permissions import Permissions, perform_check
 from app.controllers.auth.dto import AccessJWTPayloadDto
 from app.controllers.auth import PermittedAction
 from app.controllers.user.dto import FullUserDto
-from .dto import OptionalAdminFullUserDataDto
+from .dto import OptionalAdminFullUserDataDto, SetUserBannedDto
 from fastapi import APIRouter, Depends
 
 from app.views.admin.exceptions import (
+    CantBanSelfException,
     CantChangeSelfRoleException,
     CantDeleteSelfException,
 )
@@ -75,6 +76,25 @@ async def update(
         dto.password = None
 
     return await user_controller.update_info(user_id, dto)
+
+
+@router.post("/{user_id}/ban", summary="Блокировка пользователя")
+async def set_banned(
+    user_id: int,
+    dto: SetUserBannedDto,
+    admin: AccessJWTPayloadDto = Depends(PermittedAction(Permissions.BanUser)),
+    user_controller: UserController = Depends(get_user_controller),
+):
+    """
+    Устанавливает статус блокировки пользователя. Забаненный пользователь после истечения Access-токена не сможет войти в систему
+    (до тех пор, пока не разбанят).
+    Все остальные сервисы не разрешают работать с забаненными пользователями.
+    Самого себя забанить нельзя.
+    """
+    if admin.user_id == user_id:
+        raise CantBanSelfException()
+
+    return await user_controller.set_is_banned(user_id, dto.is_banned)
 
 
 @router.delete("/{user_id}", summary="Удаление пользователя")
