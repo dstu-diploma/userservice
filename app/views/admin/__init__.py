@@ -1,9 +1,10 @@
+from app.controllers.auth.exceptions import RestrictedPermissionException
 from app.controllers.user import UserController, get_user_controller
+from app.acl.permissions import Permissions, perform_check
 from app.controllers.auth.dto import AccessJWTPayloadDto
 from app.controllers.auth import PermittedAction
 from app.controllers.user.dto import FullUserDto
 from .dto import OptionalAdminFullUserDataDto
-from app.acl.permissions import Permissions
 from fastapi import APIRouter, Depends
 
 from app.views.admin.exceptions import (
@@ -60,6 +61,9 @@ async def update(
     """
 
     if dto.role is not None:
+        if not perform_check(Permissions.UpdateRole, admin.role):
+            raise RestrictedPermissionException()
+
         if admin.user_id == user_id:
             raise CantChangeSelfRoleException()
 
