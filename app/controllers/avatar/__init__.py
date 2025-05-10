@@ -1,3 +1,11 @@
+from functools import lru_cache
+from app.controllers.s3 import IS3Controller, get_s3_controller
+from os import environ, path, remove
+from PIL import Image, ImageFile
+from fastapi import Depends, UploadFile
+from typing import Protocol
+import io
+
 from .exceptions import (
     AvatarRemoveException,
     WrongMagicsException,
@@ -6,16 +14,14 @@ from .exceptions import (
     ImageSaveException,
     NoAvatarException,
 )
-from os import environ, path, remove
-from PIL import Image, ImageFile
-from fastapi import UploadFile
-from typing import Protocol
-import io
 
 AVATAR_PATH = environ.get("AVATAR_PATH", "/")
 
 
 class IUserAvatarController(Protocol):
+    s3_controller: IS3Controller
+    bucket_name: str
+
     async def create(self, file: UploadFile, user_id: int) -> None: ...
     def delete(self, user_id: int) -> None: ...
     def exists(self, user_id: int) -> bool: ...
@@ -33,13 +39,10 @@ def prepare_image(image: ImageFile.ImageFile) -> Image.Image:
     return image.convert("RGB").resize((256, 256), Image.Resampling.LANCZOS)
 
 
-def get_avatar_path(user_id: int) -> str:
-    return path.join(AVATAR_PATH, f"{user_id}.jpg")
-
-
 class UserAvatarController(IUserAvatarController):
-    def __init__(self):
-        pass
+    def __init__(self, s3_controller: IS3Controller):
+        self.s3_controller = s3_controller
+        self.bucket_name = "avatars"
 
     async def create(self, file: UploadFile, user_id: int) -> None:
         if file.content_type not in ["image/jpeg", "image/png"]:
@@ -60,18 +63,37 @@ class UserAvatarController(IUserAvatarController):
             self.delete(user_id)
 
         try:
-            prepared.save(get_avatar_path(user_id), "JPEG")
-        except Exception:
+            image_buf = io.BytesIO()
+            prepared.save(image_buf, "JPEG")
+            image_buf.seek(0)
+            self.s3_controller.upload_jpeg(
+                image_buf, self.bucket_name, self.generate_key_name(user_id)
+            )
+        except Exception as e:
             raise ImageSaveException()
+
+    def generate_key_name(self, user_id: int) -> str:
+        return f"{user_id}.jpg"
 
     def delete(self, user_id: int) -> None:
         if self.exists(user_id):
             try:
-                remove(get_avatar_path(user_id))
+                self.s3_controller.delete_object(
+                    self.bucket_name, self.generate_key_name(user_id)
+                )
             except Exception:
                 raise AvatarRemoveException()
         else:
             raise NoAvatarException()
 
     def exists(self, user_id: int) -> bool:
-        return path.exists(get_avatar_path(user_id))
+        return self.s3_controller.object_exists(
+            self.bucket_name, self.generate_key_name(user_id)
+        )
+
+
+@lru_cache
+def get_avatar_controller(
+    s3_controller: IS3Controller = Depends(get_s3_controller),
+) -> UserAvatarController:
+    return UserAvatarController(s3_controller)

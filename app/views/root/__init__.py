@@ -1,5 +1,5 @@
+from app.controllers.avatar import IUserAvatarController, get_avatar_controller
 from fastapi import APIRouter, Depends, Query, UploadFile
-from app.controllers.avatar import UserAvatarController
 from fastapi.security import OAuth2PasswordRequestForm
 from app.controllers.user.dto import MinimalUserDto
 from app.acl.permissions import Permissions
@@ -150,7 +150,7 @@ async def upload_avatar(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    avatar_controller: UserAvatarController = Depends(),
+    avatar_controller: IUserAvatarController = Depends(get_avatar_controller),
 ):
     """
     Загружает аватарку пользователю. Если у него уже есть аватарка, то заменит существующую.
@@ -163,7 +163,7 @@ def delete_avatar(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    avatar_controller: UserAvatarController = Depends(),
+    avatar_controller: IUserAvatarController = Depends(get_avatar_controller),
 ):
     """
     Удаляет аватарку пользователя.
