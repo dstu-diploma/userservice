@@ -1,9 +1,8 @@
-from functools import lru_cache
-from app.controllers.s3 import IS3Controller, get_s3_controller
-from os import environ, path, remove
+from app.ports.istorageport import IStoragePort
 from PIL import Image, ImageFile
-from fastapi import Depends, UploadFile
+from fastapi import UploadFile
 from typing import Protocol
+from os import environ
 import io
 
 from .exceptions import (
@@ -19,7 +18,7 @@ AVATAR_PATH = environ.get("AVATAR_PATH", "/")
 
 
 class IUserAvatarController(Protocol):
-    s3_controller: IS3Controller
+    storage: IStoragePort
     bucket_name: str
 
     async def create(self, file: UploadFile, user_id: int) -> None: ...
@@ -40,8 +39,8 @@ def prepare_image(image: ImageFile.ImageFile) -> Image.Image:
 
 
 class UserAvatarController(IUserAvatarController):
-    def __init__(self, s3_controller: IS3Controller):
-        self.s3_controller = s3_controller
+    def __init__(self, storage: IStoragePort):
+        self.storage = storage
         self.bucket_name = "avatars"
 
     async def create(self, file: UploadFile, user_id: int) -> None:
@@ -66,7 +65,7 @@ class UserAvatarController(IUserAvatarController):
             image_buf = io.BytesIO()
             prepared.save(image_buf, "JPEG")
             image_buf.seek(0)
-            self.s3_controller.upload_jpeg(
+            self.storage.upload_jpeg(
                 image_buf, self.bucket_name, self.generate_key_name(user_id)
             )
         except Exception as e:
@@ -78,7 +77,7 @@ class UserAvatarController(IUserAvatarController):
     def delete(self, user_id: int) -> None:
         if self.exists(user_id):
             try:
-                self.s3_controller.delete_object(
+                self.storage.delete_object(
                     self.bucket_name, self.generate_key_name(user_id)
                 )
             except Exception:
@@ -87,13 +86,6 @@ class UserAvatarController(IUserAvatarController):
             raise NoAvatarException()
 
     def exists(self, user_id: int) -> bool:
-        return self.s3_controller.object_exists(
+        return self.storage.object_exists(
             self.bucket_name, self.generate_key_name(user_id)
         )
-
-
-@lru_cache
-def get_avatar_controller(
-    s3_controller: IS3Controller = Depends(get_s3_controller),
-) -> UserAvatarController:
-    return UserAvatarController(s3_controller)

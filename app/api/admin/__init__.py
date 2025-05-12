@@ -1,10 +1,11 @@
 from app.controllers.auth.exceptions import RestrictedPermissionException
-from app.controllers.user import UserController, get_user_controller
+from .dto import OptionalAdminFullUserDataDto, SetUserBannedDto
 from app.acl.permissions import Permissions, perform_check
 from app.controllers.auth.dto import AccessJWTPayloadDto
+from app.controllers.user import IUserController
 from app.controllers.auth import PermittedAction
 from app.controllers.user.dto import FullUserDto
-from .dto import OptionalAdminFullUserDataDto, SetUserBannedDto
+from app.dependencies import get_user_controller
 from fastapi import APIRouter, Depends
 
 from app.api.admin.exceptions import (
@@ -19,7 +20,7 @@ router = APIRouter(tags=["Админка"], prefix="/admin")
 @router.get("/", summary="Список пользователей")
 async def get_all(
     _=Depends(PermittedAction(Permissions.GetUserFullInfo)),
-    user_controller: UserController = Depends(get_user_controller),
+    user_controller: IUserController = Depends(get_user_controller),
 ):
     """
     Возвращает список всех зарегистрированных пользователей.
@@ -35,7 +36,7 @@ async def get_all(
 async def get_user_by_id(
     user_id: int,
     _=Depends(PermittedAction(Permissions.GetUserFullInfo)),
-    user_controller: UserController = Depends(get_user_controller),
+    user_controller: IUserController = Depends(get_user_controller),
 ):
     """
     Возвращает информацию о конкретном пользователе.
@@ -54,7 +55,7 @@ async def update(
     admin: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateAnyUser)
     ),
-    user_controller: UserController = Depends(get_user_controller),
+    user_controller: IUserController = Depends(get_user_controller),
 ):
     """
     Позволяет изменить часть (или все) данных о пользователе.
@@ -83,7 +84,7 @@ async def set_banned(
     user_id: int,
     dto: SetUserBannedDto,
     admin: AccessJWTPayloadDto = Depends(PermittedAction(Permissions.BanUser)),
-    user_controller: UserController = Depends(get_user_controller),
+    user_controller: IUserController = Depends(get_user_controller),
 ):
     """
     Устанавливает статус блокировки пользователя. Забаненный пользователь после истечения Access-токена не сможет войти в систему
@@ -103,7 +104,7 @@ async def delete(
     admin: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.DeleteUser)
     ),
-    user_controller: UserController = Depends(get_user_controller),
+    user_controller: IUserController = Depends(get_user_controller),
 ):
     """
     Полностью удаляет пользователя из системы. Самого себя удалять нельзя.

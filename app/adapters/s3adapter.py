@@ -1,21 +1,14 @@
+from app.ports.istorageport import IStoragePort
 from botocore.client import Config
-from functools import lru_cache
-from typing import Protocol
 from os import environ
 import boto3
 import io
 
+
 S3_AUTOCREATE_BUCKETS = environ.get("S3_AUTOCREATE_BUCKETS", "False") == "True"
 
 
-class IS3Controller(Protocol):
-    def upload_jpeg(self, buf: io.BytesIO, bucket: str, key: str) -> None: ...
-    def delete_object(self, bucket: str, key: str) -> None: ...
-    def object_exists(self, bucket: str, key: str) -> bool: ...
-    def ensure_bucket(self, bucket: str) -> None: ...
-
-
-class S3Controller(IS3Controller):
+class S3Adapter(IStoragePort):
     def __init__(self):
         self.__client = boto3.client(
             "s3",
@@ -52,8 +45,3 @@ class S3Controller(IS3Controller):
             self.__client.make_bucket(bucket)
         else:
             raise RuntimeError(f"Необходимо определить бакет {bucket}!")
-
-
-@lru_cache
-def get_s3_controller() -> S3Controller:
-    return S3Controller()

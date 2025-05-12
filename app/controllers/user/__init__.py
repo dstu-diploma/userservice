@@ -1,8 +1,6 @@
-from app.controllers.auth import IAuthController, AuthController
+from app.controllers.auth import IAuthController
 from app.acl.roles import UserRoles
 from app.models import UserModel
-from functools import lru_cache
-from fastapi import Depends
 from typing import Protocol
 import bcrypt
 
@@ -47,6 +45,9 @@ class IUserController(Protocol):
     ) -> FullUserDto: ...
     async def set_role(self, user_id: int, role: UserRoles) -> FullUserDto: ...
     async def get_by_email(self, email: str) -> MinimalUserDto: ...
+    async def set_is_banned(
+        self, user_id: int, is_banned: bool
+    ) -> FullUserDto: ...
 
 
 class UserController(IUserController):
@@ -164,10 +165,3 @@ class UserController(IUserController):
         await self.auth_controller.generate_refresh_token(user.id, user.role)
 
         return FullUserDto.from_tortoise(user)
-
-
-@lru_cache
-def get_user_controller(
-    controller: AuthController = Depends(),
-) -> UserController:
-    return UserController(controller)

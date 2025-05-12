@@ -1,10 +1,10 @@
 from app.controllers.user.exceptions import UserIsBannedException
+from app.dependencies import get_user_controller
 from .auth import get_token_from_header
 from fastapi import APIRouter, Depends
 
 from app.controllers.user import (
-    get_user_controller,
-    UserController,
+    IUserController,
 )
 
 router = APIRouter(
@@ -16,7 +16,7 @@ router = APIRouter(
 async def get_user_by_id(
     id: int,
     _token: str = Depends(get_token_from_header),
-    controller: UserController = Depends(get_user_controller),
+    controller: IUserController = Depends(get_user_controller),
 ):
     info = await controller.get_minimal_info(id)
     if info.is_banned:
