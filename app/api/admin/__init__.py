@@ -7,7 +7,7 @@ from app.controllers.user.dto import FullUserDto
 from .dto import OptionalAdminFullUserDataDto, SetUserBannedDto
 from fastapi import APIRouter, Depends
 
-from app.views.admin.exceptions import (
+from app.api.admin.exceptions import (
     CantBanSelfException,
     CantChangeSelfRoleException,
     CantDeleteSelfException,
