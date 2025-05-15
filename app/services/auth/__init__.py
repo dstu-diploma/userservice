@@ -29,7 +29,7 @@ OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl=path.join(ROOT_PATH, "login"))
 SECURITY_SCHEME = HTTPBearer(auto_error=False)
 
 
-class IAuthController(Protocol):
+class IAuthService(Protocol):
     async def init_user(self, user_id: int, role: UserRoles) -> UserJWTDto: ...
     async def generate_key_pair(
         self, user_id: int, role: UserRoles
@@ -43,7 +43,7 @@ class IAuthController(Protocol):
     ) -> RefreshJWTPayloadDto: ...
 
 
-class AuthController(IAuthController):
+class AuthService(IAuthService):
     def __init__(self):
         pass
 

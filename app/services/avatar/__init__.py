@@ -17,7 +17,7 @@ from .exceptions import (
 AVATAR_PATH = environ.get("AVATAR_PATH", "/")
 
 
-class IUserAvatarController(Protocol):
+class IUserAvatarService(Protocol):
     storage: IStoragePort
     bucket_name: str
 
@@ -38,7 +38,7 @@ def prepare_image(image: ImageFile.ImageFile) -> Image.Image:
     return image.convert("RGB").resize((256, 256), Image.Resampling.LANCZOS)
 
 
-class UserAvatarController(IUserAvatarController):
+class UserAvatarService(IUserAvatarService):
     def __init__(self, storage: IStoragePort):
         self.storage = storage
         self.bucket_name = "avatars"

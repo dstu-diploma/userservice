@@ -1,7 +1,7 @@
-from app.controllers.avatar import IUserAvatarController
+from app.services.avatar import IUserAvatarService
 from fastapi import APIRouter, Depends, Query, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
-from app.controllers.user.dto import MinimalUserDto
+from app.services.user.dto import MinimalUserDto
 from app.acl.permissions import Permissions
 from .dto import AccessTokenDto
 
@@ -11,18 +11,18 @@ from app.dependencies import (
     get_user_controller,
 )
 
-from app.controllers.user import (
-    IUserController,
+from app.services.user import (
+    IUserService,
     OptionalFullUserDataDto,
     RegisteredUserDto,
     CreateUserDto,
     FullUserDto,
 )
 
-from app.controllers.auth import (
+from app.services.auth import (
     get_token_from_header,
     AccessJWTPayloadDto,
-    IAuthController,
+    IAuthService,
     PermittedAction,
 )
 
@@ -36,7 +36,7 @@ router = APIRouter(tags=["Основное"], prefix="")
 )
 async def create(
     user_dto: CreateUserDto,
-    user_controller: IUserController = Depends(get_user_controller),
+    user_controller: IUserService = Depends(get_user_controller),
 ):
     """
     Создает нового пользователя.
@@ -51,7 +51,7 @@ async def create(
 )
 async def login(
     input: OAuth2PasswordRequestForm = Depends(),
-    user_controller: IUserController = Depends(get_user_controller),
+    user_controller: IUserService = Depends(get_user_controller),
 ):
     """
     Логинит пользователя в системе. По факту "логином" является получение пары токенов. Рефреш токен обновляет свою ревизию, поэтому все предыдуще токены становятся невалидными.
@@ -66,7 +66,7 @@ async def login(
 )
 async def update_access_token(
     token: str = Depends(get_token_from_header),
-    auth_controller: IAuthController = Depends(get_auth_controller),
+    auth_controller: IAuthService = Depends(get_auth_controller),
 ):
     """
     Выпускает новый Access-токен для текущего пользователя. В заголовке Authorization должен находиться актуальный Refresh-токен.
@@ -84,7 +84,7 @@ async def update(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    user_controller: IUserController = Depends(get_user_controller),
+    user_controller: IUserService = Depends(get_user_controller),
 ):
     """
     Позволяет изменить все или часть данных о текущем пользователе.
@@ -102,7 +102,7 @@ async def get_info(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.GetUserMinimalInfo)
     ),
-    user_controller: IUserController = Depends(get_user_controller),
+    user_controller: IUserService = Depends(get_user_controller),
 ):
     """
     Возвращает данные о пользователе с заданным ID. Если запрошенный совпадает с ID залогиненного пользователя, то вернутся полные данные.
@@ -123,7 +123,7 @@ async def get_info_many(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.GetUserMinimalInfo)
     ),
-    user_controller: IUserController = Depends(get_user_controller),
+    user_controller: IUserService = Depends(get_user_controller),
 ):
     """
     Возвращает данные о пользователях с заданными ID. Если какого то из пользователей не существует, то он не попадет в список.
@@ -137,7 +137,7 @@ async def search_user(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.SearchUserMinimalInfo)
     ),
-    controller: IUserController = Depends(get_user_controller),
+    controller: IUserService = Depends(get_user_controller),
 ):
     """
     Позволяет найти пользователя по его ID/Email.
@@ -155,7 +155,7 @@ async def upload_avatar(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    avatar_controller: IUserAvatarController = Depends(get_avatar_controller),
+    avatar_controller: IUserAvatarService = Depends(get_avatar_controller),
 ):
     """
     Загружает аватарку пользователю. Если у него уже есть аватарка, то заменит существующую.
@@ -168,7 +168,7 @@ def delete_avatar(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    avatar_controller: IUserAvatarController = Depends(get_avatar_controller),
+    avatar_controller: IUserAvatarService = Depends(get_avatar_controller),
 ):
     """
     Удаляет аватарку пользователя.

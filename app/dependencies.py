@@ -1,6 +1,6 @@
-from app.controllers.avatar import IUserAvatarController, UserAvatarController
-from app.controllers.auth import AuthController, IAuthController
-from app.controllers.user import IUserController, UserController
+from app.services.avatar import IUserAvatarService, UserAvatarService
+from app.services.auth import AuthService, IAuthService
+from app.services.user import IUserService, UserService
 from app.ports.istorageport import IStoragePort
 from app.adapters.s3adapter import S3Adapter
 from functools import lru_cache
@@ -15,17 +15,17 @@ def get_storage_adapter() -> IStoragePort:
 @lru_cache
 def get_avatar_controller(
     storage: IStoragePort = Depends(get_storage_adapter),
-) -> IUserAvatarController:
-    return UserAvatarController(storage)
+) -> IUserAvatarService:
+    return UserAvatarService(storage)
 
 
 @lru_cache
-def get_auth_controller() -> IAuthController:
-    return AuthController()
+def get_auth_controller() -> IAuthService:
+    return AuthService()
 
 
 @lru_cache
 def get_user_controller(
-    controller: IAuthController = Depends(get_auth_controller),
-) -> IUserController:
-    return UserController(controller)
+    controller: IAuthService = Depends(get_auth_controller),
+) -> IUserService:
+    return UserService(controller)

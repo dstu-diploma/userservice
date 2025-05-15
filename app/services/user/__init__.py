@@ -1,4 +1,4 @@
-from app.controllers.auth import IAuthController
+from app.services.auth import IAuthService
 from app.acl.roles import UserRoles
 from app.models import UserModel
 from typing import Protocol
@@ -24,8 +24,8 @@ from .exceptions import (
 SALT = bcrypt.gensalt()
 
 
-class IUserController(Protocol):
-    auth_controller: IAuthController
+class IUserService(Protocol):
+    auth_controller: IAuthService
 
     async def create(
         self, password: str, dto: CreateUserDto
@@ -50,8 +50,8 @@ class IUserController(Protocol):
     ) -> FullUserDto: ...
 
 
-class UserController(IUserController):
-    def __init__(self, auth_controller: IAuthController):
+class UserService(IUserService):
+    def __init__(self, auth_controller: IAuthService):
         self.auth_controller = auth_controller
 
     async def get_user_from_id(self, user_id: int) -> UserModel:
