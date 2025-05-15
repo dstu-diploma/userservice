@@ -23,3 +23,12 @@ async def get_user_by_id(
         raise UserIsBannedException()
 
     return info
+
+
+@router.post("/info-many")
+async def get_info_many(
+    user_ids: list[int],
+    _token: str = Depends(get_token_from_header),
+    user_controller: IUserService = Depends(get_user_controller),
+):
+    return await user_controller.get_minimal_info_many(user_ids)
