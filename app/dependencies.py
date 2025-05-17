@@ -1,15 +1,15 @@
 from app.services.avatar import IUserAvatarService, UserAvatarService
 from app.services.auth import AuthService, IAuthService
 from app.services.user import IUserService, UserService
-from app.ports.istorageport import IStoragePort
-from app.adapters.s3adapter import S3Adapter
+from app.adapters.storage import S3StorageAdapter
+from app.ports.storage import IStoragePort
 from functools import lru_cache
 from fastapi import Depends
 
 
 @lru_cache
 def get_storage_adapter() -> IStoragePort:
-    return S3Adapter()
+    return S3StorageAdapter()
 
 
 @lru_cache

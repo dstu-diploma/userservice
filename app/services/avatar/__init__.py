@@ -1,4 +1,4 @@
-from app.ports.istorageport import IStoragePort
+from app.ports.storage import IStoragePort
 from PIL import Image, ImageFile
 from fastapi import UploadFile
 from typing import Protocol
