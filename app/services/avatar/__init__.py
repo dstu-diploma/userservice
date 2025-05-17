@@ -2,7 +2,6 @@ from app.ports.storage import IStoragePort
 from PIL import Image, ImageFile
 from fastapi import UploadFile
 from typing import Protocol
-from os import environ
 import io
 
 from .exceptions import (
@@ -13,8 +12,6 @@ from .exceptions import (
     ImageSaveException,
     NoAvatarException,
 )
-
-AVATAR_PATH = environ.get("AVATAR_PATH", "/")
 
 
 class IUserAvatarService(Protocol):

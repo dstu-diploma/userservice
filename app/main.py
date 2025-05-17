@@ -1,13 +1,13 @@
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import main_router
+from app.config import Settings
 from fastapi import FastAPI
 from app.db import init_db
-from os import environ
-
-ROOT_PATH = environ.get("ROOT_PATH", "/")
 
 app = FastAPI(
-    title="DSTU Diploma | UserService", docs_url="/swagger", root_path=ROOT_PATH
+    title="DSTU Diploma | UserService",
+    docs_url="/swagger",
+    root_path=Settings.ROOT_PATH,
 )
 init_db(app)
 

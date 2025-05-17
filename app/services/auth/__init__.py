@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 from app.models import UserTokensModel
 from typing import Annotated, Protocol
 from app.acl.roles import UserRoles
-from os import environ, path
-
+from app.config import Settings
 from fastapi import Depends
+from os import path
 
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -15,17 +15,17 @@ from fastapi.security import (
     HTTPBearer,
 )
 from .exceptions import (
-    NoSuchTokenUserException,
     RestrictedPermissionException,
+    NoSuchTokenUserException,
     JWTParseErrorException,
     InvalidTokenException,
     TokenExpiredException,
     InvalidTokenRevision,
 )
 
-JWT_SECRET = environ.get("JWT_SECRET", "zaza")
-ROOT_PATH = environ.get("ROOT_PATH", "/")
-OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl=path.join(ROOT_PATH, "login"))
+OAUTH2_SCHEME = OAuth2PasswordBearer(
+    tokenUrl=path.join(Settings.ROOT_PATH, "login")
+)
 SECURITY_SCHEME = HTTPBearer(auto_error=False)
 
 
@@ -70,7 +70,7 @@ class AuthService(IAuthService):
 
         return jwt.encode(
             payload.model_dump(),
-            JWT_SECRET,
+            Settings.JWT_SECRET,
         )
 
     async def generate_refresh_token(
@@ -89,12 +89,12 @@ class AuthService(IAuthService):
         await user.save()
         return jwt.encode(
             payload.model_dump(),
-            JWT_SECRET,
+            Settings.JWT_SECRET,
         )
 
     async def validate_refresh_token(self, token: str) -> RefreshJWTPayloadDto:
         try:
-            raw_payload = jwt.decode(token, JWT_SECRET)
+            raw_payload = jwt.decode(token, Settings.JWT_SECRET)
             payload = RefreshJWTPayloadDto(**raw_payload)
             user = await self._get_user_by_id(payload.user_id)
 
@@ -127,7 +127,7 @@ async def get_user_dto(
     access_token: str = Depends(OAUTH2_SCHEME),
 ) -> AccessJWTPayloadDto:
     try:
-        raw_payload = jwt.decode(access_token, JWT_SECRET)
+        raw_payload = jwt.decode(access_token, Settings.JWT_SECRET)
         return AccessJWTPayloadDto(**raw_payload)
     except ExpiredSignatureError:
         raise TokenExpiredException()
