@@ -19,6 +19,7 @@ class MinimalUserDto(BaseModel):
     patronymic: str
     register_date: datetime
     is_banned: bool
+    formatted_name: str
 
     @staticmethod
     def from_tortoise(user: UserModel):
@@ -29,6 +30,7 @@ class MinimalUserDto(BaseModel):
             patronymic=user.patronymic,
             register_date=user.register_date,
             is_banned=user.is_banned,
+            formatted_name=f"{user.last_name} {user.first_name} {user.patronymic}",
         )
 
 
@@ -51,6 +53,7 @@ class FullUserDto(MinimalUserDto):
             about=user.about,
             birthday=user.birthday,
             is_banned=user.is_banned,
+            formatted_name=f"{user.last_name} {user.first_name} {user.patronymic}",
         )
 
 
