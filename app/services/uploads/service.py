@@ -32,7 +32,7 @@ def validate_magics(file_bytes: bytes) -> bool:
 def prepare_image(
     image: ImageFile.ImageFile, size: tuple[int, int]
 ) -> Image.Image:
-    return image.convert("PNG").resize(size, Image.Resampling.LANCZOS)
+    return image.convert("RGB").resize(size, Image.Resampling.LANCZOS)
 
 
 class UserUploadService(IUserUploadService):
