@@ -1,22 +1,22 @@
-from app.services.avatar import IUserAvatarService
 from fastapi import APIRouter, Depends, Query, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
-from app.services.user.dto import MinimalUserDto
+from app.services.user.interface import IUserService
+from app.services.avatar import IUserAvatarService
 from app.acl.permissions import Permissions
 from .dto import AccessTokenDto
+
+from app.services.user.dto import (
+    CreateUserDto,
+    FullUserDto,
+    MinimalUserDto,
+    OptionalFullUserDataDto,
+    RegisteredUserDto,
+)
 
 from app.dependencies import (
     get_auth_controller,
     get_avatar_controller,
     get_user_controller,
-)
-
-from app.services.user import (
-    IUserService,
-    OptionalFullUserDataDto,
-    RegisteredUserDto,
-    CreateUserDto,
-    FullUserDto,
 )
 
 from app.services.auth import (
@@ -108,9 +108,9 @@ async def get_info(
     Возвращает данные о пользователе с заданным ID. Если запрошенный совпадает с ID залогиненного пользователя, то вернутся полные данные.
     """
     if user_id == user_dto.user_id:
-        return await user_controller.get_full_info(user_id)
+        return await user_controller.get_info(user_id, FullUserDto)
     else:
-        return await user_controller.get_minimal_info(user_id)
+        return await user_controller.get_info(user_id, MinimalUserDto)
 
 
 @router.post(
@@ -128,7 +128,7 @@ async def get_info_many(
     """
     Возвращает данные о пользователях с заданными ID. Если какого то из пользователей не существует, то он не попадет в список.
     """
-    return await user_controller.get_minimal_info_many(user_ids)
+    return await user_controller.get_info_many(user_ids, MinimalUserDto)
 
 
 @router.get("/search-by-email", summary="Поиск пользователя")

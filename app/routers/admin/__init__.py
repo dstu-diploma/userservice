@@ -2,17 +2,11 @@ from app.services.auth.exceptions import RestrictedPermissionException
 from .dto import OptionalAdminFullUserDataDto, SetUserBannedDto
 from app.acl.permissions import Permissions, perform_check
 from app.services.auth.dto import AccessJWTPayloadDto
+from app.services.user.interface import IUserService
 from app.dependencies import get_user_controller
 from app.services.auth import PermittedAction
 from app.services.user.dto import FullUserDto
-from app.services.user import IUserService
 from fastapi import APIRouter, Depends
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-logger.info("zazas")
 
 from .exceptions import (
     CantChangeSelfRoleException,
@@ -23,7 +17,9 @@ from .exceptions import (
 router = APIRouter(tags=["Админка"], prefix="/admin")
 
 
-@router.get("/", summary="Список пользователей")
+@router.get(
+    "/", response_model=list[FullUserDto], summary="Список пользователей"
+)
 async def get_all(
     _=Depends(PermittedAction(Permissions.GetUserFullInfo)),
     user_controller: IUserService = Depends(get_user_controller),
@@ -31,7 +27,7 @@ async def get_all(
     """
     Возвращает список всех зарегистрированных пользователей.
     """
-    return await user_controller.get_full_info_all()
+    return await user_controller.get_info_all(FullUserDto)
 
 
 @router.get(
@@ -47,7 +43,7 @@ async def get_user_by_id(
     """
     Возвращает информацию о конкретном пользователе.
     """
-    return await user_controller.get_full_info(user_id)
+    return await user_controller.get_info(user_id, FullUserDto)
 
 
 @router.patch(

@@ -1,7 +1,8 @@
 from app.services.avatar import IUserAvatarService, UserAvatarService
 from app.services.auth import AuthService, IAuthService
-from app.services.user import IUserService, UserService
+from app.services.user.interface import IUserService
 from app.adapters.storage import S3StorageAdapter
+from app.services.user.service import UserService
 from app.ports.storage import IStoragePort
 from functools import lru_cache
 from fastapi import Depends
