@@ -165,6 +165,24 @@ async def upload_avatar(
     """
     Загружает аватарку пользователю. Если у него уже есть аватарка, то заменит существующую.
     """
+    return await upload_service.upload_avatar(file, user_dto.user_id)
+
+
+@router.put(
+    "/cover",
+    response_model=UserUploadDto,
+    summary="Установка/обновление обложки",
+)
+async def upload_avatar(
+    file: UploadFile,
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.UpdateSelf)
+    ),
+    upload_service: IUserUploadService = Depends(get_upload_service),
+):
+    """
+    Загружает обложку пользователю. Если у него уже есть обложка, то заменит существующую.
+    """
     return await upload_service.upload_cover(file, user_dto.user_id)
 
 
@@ -179,3 +197,16 @@ async def delete_avatar(
     Удаляет аватарку пользователя.
     """
     return await upload_service.delete(user_dto.user_id, UserUploadsType.Avatar)
+
+
+@router.delete("/cover", summary="Удаление обложки")
+async def delete_cover(
+    user_dto: AccessJWTPayloadDto = Depends(
+        PermittedAction(Permissions.UpdateSelf)
+    ),
+    upload_service: IUserUploadService = Depends(get_upload_service),
+):
+    """
+    Удаляет обложку пользователя.
+    """
+    return await upload_service.delete(user_dto.user_id, UserUploadsType.Cover)
