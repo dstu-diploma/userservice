@@ -22,6 +22,6 @@ async def download_team_submission(
         s3_obj["Body"],
         media_type=s3_obj["ContentType"],
         headers={
-            "Content-Disposition": f'attachment; filename="{quote(f"{upload.type}_{upload.user_id}")}"'
+            "Content-Disposition": f'attachment; filename="{quote(f"{upload.type}_{upload.user_id}.jpg")}"'
         },
     )
