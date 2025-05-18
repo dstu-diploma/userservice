@@ -185,7 +185,7 @@ class UserService(IUserService):
         await self.auth_service.generate_refresh_token(user.id, user.role)
 
         await self.event_publisher.publish(
-            "user.banned"
+            "user.banned",
             ExternalUserDto.from_tortoise(user),
         )
 
