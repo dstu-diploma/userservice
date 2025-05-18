@@ -66,7 +66,7 @@ class UserUploadService(IUserUploadService):
                 )
 
         if size_maxs:
-            if image.width < size_maxs[0] or image.height < size_maxs[1]:
+            if image.width > size_maxs[0] or image.height > size_maxs[1]:
                 raise TooBigImageException(
                     image.width, image.height, *size_maxs
                 )
