@@ -88,7 +88,10 @@ class UserUploadService(IUserUploadService):
     async def _save_upload(
         self, user_id: int, file: Image.Image, type: UserUploadsType
     ):
-        await self.delete(user_id, type)
+
+        upload = await UserUploadsModel.get_or_none(user_id=user_id, type=type)
+        if upload:
+            await self.delete(user_id, type)
         key = self._generate_key(user_id)
 
         upload = await UserUploadsModel.create(
