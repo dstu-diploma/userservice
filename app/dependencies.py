@@ -1,4 +1,5 @@
-from app.services.avatar import IUserAvatarService, UserAvatarService
+from app.services.avatar.interface import IUserAvatarService
+from app.services.avatar.service import UserAvatarService
 from app.services.auth import AuthService, IAuthService
 from app.services.user.interface import IUserService
 from app.adapters.storage import S3StorageAdapter

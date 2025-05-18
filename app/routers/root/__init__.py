@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
+from app.services.avatar.interface import IUserAvatarService
 from app.services.user.interface import IUserService
-from app.services.avatar import IUserAvatarService
 from app.acl.permissions import Permissions
 from .dto import AccessTokenDto
 
@@ -160,7 +160,7 @@ async def upload_avatar(
     """
     Загружает аватарку пользователю. Если у него уже есть аватарка, то заменит существующую.
     """
-    await avatar_controller.create(file, user_dto.user_id)
+    await avatar_controller.upload_cover(file, user_dto.user_id)
 
 
 @router.delete("/avatar", summary="Удаление аватарки")
@@ -173,4 +173,6 @@ def delete_avatar(
     """
     Удаляет аватарку пользователя.
     """
-    return avatar_controller.delete(user_dto.user_id)
+    return avatar_controller.delete(
+        avatar_controller.generate_avatar_key(user_dto.user_id)
+    )
