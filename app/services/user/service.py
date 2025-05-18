@@ -27,8 +27,8 @@ SALT = bcrypt.gensalt()
 
 
 class UserService(IUserService):
-    def __init__(self, auth_controller: IAuthService):
-        self.auth_controller = auth_controller
+    def __init__(self, auth_service: IAuthService):
+        self.auth_service = auth_service
 
     async def get_user_from_id(self, user_id: int) -> UserModel:
         user = await UserModel.get_or_none(id=user_id)
@@ -49,7 +49,7 @@ class UserService(IUserService):
             **dto.model_dump(),
         )
 
-        tokens = await self.auth_controller.init_user(model.id, model.role)
+        tokens = await self.auth_service.init_user(model.id, model.role)
 
         return RegisteredUserDto(
             user=FullUserDto.from_tortoise(model),
@@ -66,8 +66,8 @@ class UserService(IUserService):
         if user.is_banned:
             raise UserIsBannedException()
 
-        access_token, refresh_token = (
-            await self.auth_controller.generate_key_pair(user.id, user.role)
+        access_token, refresh_token = await self.auth_service.generate_key_pair(
+            user.id, user.role
         )
 
         return RegisteredUserDto(
@@ -132,6 +132,6 @@ class UserService(IUserService):
         # генерация рефреш токена нужна, чтобы поднять ревизию
         # все старые токены станут невалидными,
         # и забаненный пользователь не сможет даже зайти в аккаунт
-        await self.auth_controller.generate_refresh_token(user.id, user.role)
+        await self.auth_service.generate_refresh_token(user.id, user.role)
 
         return FullUserDto.from_tortoise(user)

@@ -14,7 +14,7 @@ from .dto import (
 
 
 class IUserService(Protocol):
-    auth_controller: IAuthService
+    auth_service: IAuthService
 
     async def get_user_from_id(self, user_id: int) -> UserModel: ...
     async def create(

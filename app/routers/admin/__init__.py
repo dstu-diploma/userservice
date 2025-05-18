@@ -3,7 +3,7 @@ from .dto import OptionalAdminFullUserDataDto, SetUserBannedDto
 from app.acl.permissions import Permissions, perform_check
 from app.services.auth.dto import AccessJWTPayloadDto
 from app.services.user.interface import IUserService
-from app.dependencies import get_user_controller
+from app.dependencies import get_user_service
 from app.services.auth import PermittedAction
 from app.services.user.dto import FullUserDto
 from fastapi import APIRouter, Depends
@@ -22,12 +22,12 @@ router = APIRouter(tags=["Админка"], prefix="/admin")
 )
 async def get_all(
     _=Depends(PermittedAction(Permissions.GetUserFullInfo)),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Возвращает список всех зарегистрированных пользователей.
     """
-    return await user_controller.get_info_all(FullUserDto)
+    return await user_service.get_info_all(FullUserDto)
 
 
 @router.get(
@@ -38,12 +38,12 @@ async def get_all(
 async def get_user_by_id(
     user_id: int,
     _=Depends(PermittedAction(Permissions.GetUserFullInfo)),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Возвращает информацию о конкретном пользователе.
     """
-    return await user_controller.get_info(user_id, FullUserDto)
+    return await user_service.get_info(user_id, FullUserDto)
 
 
 @router.patch(
@@ -57,7 +57,7 @@ async def update(
     admin: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateAnyUser)
     ),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Позволяет изменить часть (или все) данных о пользователе.
@@ -71,14 +71,14 @@ async def update(
         if admin.user_id == user_id:
             raise CantChangeSelfRoleException()
 
-        await user_controller.set_role(user_id, dto.role)
+        await user_service.set_role(user_id, dto.role)
         dto.role = None
 
     if dto.password is not None:
-        await user_controller.set_password(user_id, dto.password)
+        await user_service.set_password(user_id, dto.password)
         dto.password = None
 
-    return await user_controller.update_info(user_id, dto)
+    return await user_service.update_info(user_id, dto)
 
 
 @router.post("/{user_id}/ban", summary="Блокировка пользователя")
@@ -86,7 +86,7 @@ async def set_banned(
     user_id: int,
     dto: SetUserBannedDto,
     admin: AccessJWTPayloadDto = Depends(PermittedAction(Permissions.BanUser)),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Устанавливает статус блокировки пользователя. Забаненный пользователь после истечения Access-токена не сможет войти в систему
@@ -97,7 +97,7 @@ async def set_banned(
     if admin.user_id == user_id:
         raise CantBanSelfException()
 
-    return await user_controller.set_is_banned(user_id, dto.is_banned)
+    return await user_service.set_is_banned(user_id, dto.is_banned)
 
 
 @router.delete("/{user_id}", summary="Удаление пользователя")
@@ -106,7 +106,7 @@ async def delete(
     admin: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.DeleteUser)
     ),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Полностью удаляет пользователя из системы. Самого себя удалять нельзя.
@@ -114,4 +114,4 @@ async def delete(
     if admin.user_id == user_id:
         raise CantDeleteSelfException()
 
-    return await user_controller.delete(user_id)
+    return await user_service.delete(user_id)

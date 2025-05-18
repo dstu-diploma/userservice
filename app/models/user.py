@@ -1,6 +1,7 @@
 from app.acl.roles import UserRoles
 from tortoise.models import Model
 from tortoise import fields
+from enum import StrEnum
 import bcrypt
 
 
@@ -47,3 +48,25 @@ class UserTokensModel(Model):
 
     class Meta:
         table: str = "usertokens"
+
+
+class UserUploadsType(StrEnum):
+    Avatar = "avatar"
+    Cover = "cover"
+
+
+class UserUploadsModel(Model):
+    id = fields.IntField(pk=True)
+    user: fields.ForeignKeyRelation[UserModel] = fields.ForeignKeyField(
+        model_name="models.UserModel",
+        related_name="uploads",
+        on_delete=fields.CASCADE,
+    )
+    type = fields.CharEnumField(enum_type=UserUploadsType, max_length=16)
+    s3_key = fields.CharField(max_length=256)
+    content_type = fields.CharField(max_length=255)
+    uploaded_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "uploads"
+        unique_together = (("user", "type"),)

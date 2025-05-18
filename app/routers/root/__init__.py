@@ -1,29 +1,31 @@
+from app.models.user import UserUploadsType
+from app.services.uploads.dto import UserUploadDto
+from app.services.uploads.interface import IUserUploadService
 from fastapi import APIRouter, Depends, Query, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
-from app.services.avatar.interface import IUserAvatarService
 from app.services.user.interface import IUserService
 from app.acl.permissions import Permissions
 from .dto import AccessTokenDto
 
 from app.services.user.dto import (
-    CreateUserDto,
-    FullUserDto,
-    MinimalUserDto,
     OptionalFullUserDataDto,
     RegisteredUserDto,
+    CreateUserDto,
+    MinimalUserDto,
+    FullUserDto,
 )
 
 from app.dependencies import (
-    get_auth_controller,
-    get_avatar_controller,
-    get_user_controller,
+    get_upload_service,
+    get_auth_service,
+    get_user_service,
 )
 
 from app.services.auth import (
     get_token_from_header,
     AccessJWTPayloadDto,
-    IAuthService,
     PermittedAction,
+    IAuthService,
 )
 
 router = APIRouter(tags=["Основное"], prefix="")
@@ -36,12 +38,12 @@ router = APIRouter(tags=["Основное"], prefix="")
 )
 async def create(
     user_dto: CreateUserDto,
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Создает нового пользователя.
     """
-    return await user_controller.create(user_dto.password, user_dto)
+    return await user_service.create(user_dto.password, user_dto)
 
 
 @router.post(
@@ -51,12 +53,12 @@ async def create(
 )
 async def login(
     input: OAuth2PasswordRequestForm = Depends(),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Логинит пользователя в системе. По факту "логином" является получение пары токенов. Рефреш токен обновляет свою ревизию, поэтому все предыдуще токены становятся невалидными.
     """
-    return await user_controller.login(input.username, input.password)
+    return await user_service.login(input.username, input.password)
 
 
 @router.post(
@@ -66,13 +68,13 @@ async def login(
 )
 async def update_access_token(
     token: str = Depends(get_token_from_header),
-    auth_controller: IAuthService = Depends(get_auth_controller),
+    auth_service: IAuthService = Depends(get_auth_service),
 ):
     """
     Выпускает новый Access-токен для текущего пользователя. В заголовке Authorization должен находиться актуальный Refresh-токен.
     """
     return AccessTokenDto(
-        access_token=await auth_controller.generate_access_token(token)
+        access_token=await auth_service.generate_access_token(token)
     )
 
 
@@ -84,12 +86,12 @@ async def update(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Позволяет изменить все или часть данных о текущем пользователе.
     """
-    return await user_controller.update_info(user_dto.user_id, update_dto)
+    return await user_service.update_info(user_dto.user_id, update_dto)
 
 
 @router.get(
@@ -102,15 +104,15 @@ async def get_info(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.GetUserMinimalInfo)
     ),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Возвращает данные о пользователе с заданным ID. Если запрошенный совпадает с ID залогиненного пользователя, то вернутся полные данные.
     """
     if user_id == user_dto.user_id:
-        return await user_controller.get_info(user_id, FullUserDto)
+        return await user_service.get_info(user_id, FullUserDto)
     else:
-        return await user_controller.get_info(user_id, MinimalUserDto)
+        return await user_service.get_info(user_id, MinimalUserDto)
 
 
 @router.post(
@@ -123,12 +125,12 @@ async def get_info_many(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.GetUserMinimalInfo)
     ),
-    user_controller: IUserService = Depends(get_user_controller),
+    user_service: IUserService = Depends(get_user_service),
 ):
     """
     Возвращает данные о пользователях с заданными ID. Если какого то из пользователей не существует, то он не попадет в список.
     """
-    return await user_controller.get_info_many(user_ids, MinimalUserDto)
+    return await user_service.get_info_many(user_ids, MinimalUserDto)
 
 
 @router.get("/search-by-email", summary="Поиск пользователя")
@@ -137,17 +139,18 @@ async def search_user(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.SearchUserMinimalInfo)
     ),
-    controller: IUserService = Depends(get_user_controller),
+    service: IUserService = Depends(get_user_service),
 ):
     """
     Позволяет найти пользователя по его ID/Email.
     Если пользователя не существует, то вернет 404.
     """
-    return await controller.get_by_email(email)
+    return await service.get_by_email(email)
 
 
 @router.put(
     "/avatar",
+    response_model=UserUploadDto,
     summary="Установка/обновление аватарки",
 )
 async def upload_avatar(
@@ -155,24 +158,22 @@ async def upload_avatar(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    avatar_controller: IUserAvatarService = Depends(get_avatar_controller),
+    upload_service: IUserUploadService = Depends(get_upload_service),
 ):
     """
     Загружает аватарку пользователю. Если у него уже есть аватарка, то заменит существующую.
     """
-    await avatar_controller.upload_cover(file, user_dto.user_id)
+    return await upload_service.upload_cover(file, user_dto.user_id)
 
 
 @router.delete("/avatar", summary="Удаление аватарки")
-def delete_avatar(
+async def delete_avatar(
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
     ),
-    avatar_controller: IUserAvatarService = Depends(get_avatar_controller),
+    upload_service: IUserUploadService = Depends(get_upload_service),
 ):
     """
     Удаляет аватарку пользователя.
     """
-    return avatar_controller.delete(
-        avatar_controller.generate_avatar_key(user_dto.user_id)
-    )
+    return await upload_service.delete(user_dto.user_id, UserUploadsType.Avatar)
