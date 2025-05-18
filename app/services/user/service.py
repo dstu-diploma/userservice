@@ -145,7 +145,8 @@ class UserService(IUserService):
         await user.delete()
 
         await self.event_publisher.publish(
-            "users", "user.deleted", ExternalUserDto.from_tortoise(user)
+            "user.deleted",
+            ExternalUserDto.from_tortoise(user),
         )
 
     async def set_password(self, user_id: int, password: str) -> FullUserDto:
@@ -184,7 +185,8 @@ class UserService(IUserService):
         await self.auth_service.generate_refresh_token(user.id, user.role)
 
         await self.event_publisher.publish(
-            "users", "user.banned", ExternalUserDto.from_tortoise(user)
+            "user.banned"
+            ExternalUserDto.from_tortoise(user),
         )
 
         return FullUserDto.from_tortoise(
