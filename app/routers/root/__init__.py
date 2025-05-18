@@ -6,6 +6,7 @@ from app.services.uploads.dto import UserUploadDto
 from app.models.user import UserUploadsType
 from app.acl.permissions import Permissions
 from .dto import AccessTokenDto
+import logging
 
 from app.services.user.dto import (
     OptionalFullUserDataDto,

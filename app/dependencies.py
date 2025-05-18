@@ -7,7 +7,7 @@ from app.services.user.interface import IUserService
 from app.adapters.storage import S3StorageAdapter
 from app.services.user.service import UserService
 from app.ports.storage import IStoragePort
-from app.config import Settings
+from app.config.app import Settings
 from functools import lru_cache
 from fastapi import Depends
 

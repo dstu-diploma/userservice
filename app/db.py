@@ -1,5 +1,5 @@
 from tortoise.contrib.fastapi import register_tortoise
-from app.config import Settings
+from app.config.app import Settings
 from tortoise import Tortoise
 from fastapi import FastAPI
 

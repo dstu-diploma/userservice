@@ -2,11 +2,14 @@ from app.ports.event_publisher import IEventPublisherPort
 from pydantic import BaseModel
 from uuid import uuid4
 import aio_pika
+import logging
 
 from app.ports.event_publisher.dto import EventPayload
 from app.ports.event_publisher.exceptions import (
     EventPublisherNotConnectedException,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class AioPikaEventPublisherAdapter(IEventPublisherPort):
@@ -30,6 +33,8 @@ class AioPikaEventPublisherAdapter(IEventPublisherPort):
         payload = EventPayload(
             event_id=uuid4(), event_name=event_name, data=data.model_dump()
         )
+
+        LOGGER.info(f"Publishing a message: {payload}")
 
         message = aio_pika.Message(
             body=payload.model_dump_json().encode(),

@@ -2,7 +2,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.dependencies import get_event_publisher
 from contextlib import asynccontextmanager
 from app.routers import main_router
-from app.config import Settings
+from app.config.app import Settings
 from fastapi import FastAPI
 from app.db import init_db
 

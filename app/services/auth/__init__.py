@@ -1,13 +1,15 @@
 from .dto import AccessJWTPayloadDto, RefreshJWTPayloadDto, UserJWTDto
 from app.acl.permissions import PermissionAcl, perform_check
 from jose import ExpiredSignatureError, JWTError, jwt
+from app.config.logging import ctx_user_id
 from datetime import datetime, timedelta
 from app.models import UserTokensModel
 from typing import Annotated, Protocol
 from app.acl.roles import UserRoles
-from app.config import Settings
+from app.config.app import Settings
 from fastapi import Depends
 from os import path
+import logging
 
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -27,6 +29,7 @@ OAUTH2_SCHEME = OAuth2PasswordBearer(
     tokenUrl=path.join(Settings.ROOT_PATH, "login")
 )
 SECURITY_SCHEME = HTTPBearer(auto_error=False)
+LOGGER = logging.getLogger(__name__)
 
 
 class IAuthService(Protocol):
@@ -50,6 +53,9 @@ class AuthService(IAuthService):
     async def init_user(self, user_id: int, role: UserRoles) -> UserJWTDto:
         await UserTokensModel.create(user_id=user_id)
         access, refresh = await self.generate_key_pair(user_id, role)
+        LOGGER.info(
+            f"Initialising user tokens row for user id: {user_id} with role {role}"
+        )
         return UserJWTDto(access_token=access, refresh_token=refresh)
 
     async def generate_key_pair(
@@ -84,6 +90,10 @@ class AuthService(IAuthService):
             role=role,
             token_revision=user.token_revision,
             exp=datetime.now() + timedelta(days=7),
+        )
+
+        LOGGER.info(
+            f"Generating new refresh token for user id: {user_id} with role {role}"
         )
 
         await user.save()

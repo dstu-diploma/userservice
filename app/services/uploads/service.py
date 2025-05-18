@@ -2,8 +2,8 @@ from app.models.user import UserUploadsModel, UserUploadsType
 from app.services.uploads.interface import IUserUploadService
 from app.services.uploads.dto import UserUploadDto
 from app.ports.storage import IStoragePort
+from app.config.app import Settings
 from PIL import Image, ImageFile
-from app.config import Settings
 from fastapi import UploadFile
 import urllib.parse
 import uuid

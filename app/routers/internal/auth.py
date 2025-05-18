@@ -1,6 +1,6 @@
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from .exceptions import InvalidAuthException
-from app.config import Settings
+from app.config.app import Settings
 from fastapi import Depends
 
 SECURITY_SCHEME = HTTPBearer(auto_error=False)

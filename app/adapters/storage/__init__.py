@@ -1,8 +1,11 @@
 from app.ports.storage import IStoragePort
+from app.config.app import Settings
 from botocore.client import Config
-from app.config import Settings
+import logging
 import boto3
 import io
+
+LOGGER = logging.getLogger(__name__)
 
 
 class S3StorageAdapter(IStoragePort):
@@ -16,26 +19,47 @@ class S3StorageAdapter(IStoragePort):
             region_name="us-east-1",
         )
 
+        LOGGER.debug("Successfully connected to S3 client")
+
     def upload_jpeg(self, buf: io.BytesIO, bucket: str, key: str) -> None:
-        self.__client.upload_fileobj(
-            buf,
-            bucket,
-            key,
-            ExtraArgs={"ContentType": "image/jpeg"},
-        )
+        try:
+            self.__client.upload_fileobj(
+                buf,
+                bucket,
+                key,
+                ExtraArgs={"ContentType": "image/jpeg"},
+            )
+            LOGGER.info(f"Uploading JPEG with key {key}")
+        except Exception as e:
+            LOGGER.error(
+                f"Error while uploading JPEG with key {key}", exc_info=True
+            )
+            raise
 
     def upload_file(
         self, buf: io.BytesIO, bucket: str, key: str, content_type: str
     ) -> None:
-        self.__client.upload_fileobj(
-            buf,
-            bucket,
-            key,
-            ExtraArgs={"ContentType": content_type},
-        )
+        try:
+            self.__client.upload_fileobj(
+                buf,
+                bucket,
+                key,
+                ExtraArgs={"ContentType": content_type},
+            )
+            LOGGER.info(f"Uploading file with key {key}")
+        except Exception as e:
+            LOGGER.error(
+                f"Error while uploading file with key {key}", exc_info=True
+            )
+            raise
 
     def delete_object(self, bucket: str, key: str) -> None:
-        self.__client.delete_object(Bucket=bucket, Key=key)
+        try:
+            self.__client.delete_object(Bucket=bucket, Key=key)
+            LOGGER.info(f"Deleting object with key {key}")
+        except Exception as e:
+            LOGGER.error(f"Error while deleting object with key {key}")
+            raise
 
     def object_exists(self, bucket: str, key: str) -> bool:
         try:
@@ -45,7 +69,13 @@ class S3StorageAdapter(IStoragePort):
             return False
 
     def get_object(self, bucket: str, key: str) -> dict:
-        return self.__client.get_object(Bucket=bucket, Key=key)
+        try:
+            obj = self.__client.get_object(Bucket=bucket, Key=key)
+            LOGGER.info(f"Getting object with key {key}")
+            return obj
+        except Exception as e:
+            LOGGER.error(f"Error while getting object with key {key}")
+            raise
 
     def ensure_bucket(self, bucket: str) -> None:
         if self.__client.bucket_exists(bucket):
