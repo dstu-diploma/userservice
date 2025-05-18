@@ -7,6 +7,7 @@ class UserServiceSettings(BaseSettings):
     )
 
     DATABASE_URL: str
+    RABBITMQ_URL: str
 
     S3_ENDPOINT: str
     S3_ACCESS_KEY: str

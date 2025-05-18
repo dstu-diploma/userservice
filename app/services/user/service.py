@@ -1,4 +1,5 @@
 from app.services.uploads.interface import IUserUploadService
+from app.ports.event_publisher import IEventPublisherPort
 from app.services.user.interface import IUserService
 from app.services.auth import IAuthService
 from app.acl.roles import UserRoles
@@ -8,6 +9,7 @@ import bcrypt
 
 
 from .dto import (
+    ExternalUserDto,
     OptionalFullUserDataDto,
     RegisteredUserDto,
     MinimalUserDto,
@@ -29,10 +31,14 @@ SALT = bcrypt.gensalt()
 
 class UserService(IUserService):
     def __init__(
-        self, auth_service: IAuthService, upload_service: IUserUploadService
+        self,
+        auth_service: IAuthService,
+        upload_service: IUserUploadService,
+        event_publisher: IEventPublisherPort,
     ):
         self.auth_service = auth_service
         self.upload_service = upload_service
+        self.event_publisher = event_publisher
 
     async def get_user_from_id(self, user_id: int) -> UserModel:
         user = await UserModel.get_or_none(id=user_id)
@@ -138,6 +144,10 @@ class UserService(IUserService):
         user = await self.get_user_from_id(user_id)
         await user.delete()
 
+        await self.event_publisher.publish(
+            "users", "user.deleted", ExternalUserDto.from_tortoise(user)
+        )
+
     async def set_password(self, user_id: int, password: str) -> FullUserDto:
         user = await self.get_user_from_id(user_id)
         user.password_hash = bcrypt.hashpw(password.encode(), SALT).decode()
@@ -172,6 +182,10 @@ class UserService(IUserService):
         # все старые токены станут невалидными,
         # и забаненный пользователь не сможет даже зайти в аккаунт
         await self.auth_service.generate_refresh_token(user.id, user.role)
+
+        await self.event_publisher.publish(
+            "users", "user.banned", ExternalUserDto.from_tortoise(user)
+        )
 
         return FullUserDto.from_tortoise(
             user, await self.upload_service.get_uploads(user.id)
