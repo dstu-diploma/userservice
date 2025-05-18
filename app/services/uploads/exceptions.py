@@ -27,14 +27,30 @@ class ImageSaveException(HTTPException):
         )
 
 
-class AvatarRemoveException(HTTPException):
+class FileRemoveException(HTTPException):
     def __init__(self):
         super().__init__(
             status_code=500,
-            detail="Произошла ошибка при попытке удалить аватарку!",
+            detail="Произошла ошибка при попытке удалить файл!",
         )
 
 
-class NoAvatarException(HTTPException):
+class NoFileException(HTTPException):
     def __init__(self):
-        super().__init__(status_code=500, detail="Аватарки не существует!")
+        super().__init__(status_code=400, detail="Файла не существует!")
+
+
+class TooSmallImageException(HTTPException):
+    def __init__(self, w: int, h: int, min_w: int, min_h: int):
+        super().__init__(
+            status_code=400,
+            detail=f"Размер изображения слишком мал! Минимум: {min_w}x{min_h}. У Вас: {w}x{h}!",
+        )
+
+
+class TooBigImageException(HTTPException):
+    def __init__(self, w: int, h: int, max_w: int, max_h: int):
+        super().__init__(
+            status_code=400,
+            detail=f"Размер изображения слишком большой! Максимум: {max_w}x{max_h}. У Вас: {w}x{h}!",
+        )

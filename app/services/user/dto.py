@@ -3,6 +3,8 @@ from pydantic import BaseModel, StringConstraints
 from app.models.user import UserModel
 from datetime import datetime
 
+from app.services.uploads.dto import UserUploadDto
+
 
 class CreateUserDto(BaseModel):
     email: Annotated[str, StringConstraints(min_length=4)]
@@ -17,7 +19,11 @@ UserDtoT = TypeVar("UserDtoT", bound="IUserDto")
 
 class IUserDto(Protocol):
     @classmethod
-    def from_tortoise(cls: Type[UserDtoT], user: UserModel) -> UserDtoT: ...
+    def from_tortoise(
+        cls: Type[UserDtoT],
+        user: UserModel,
+        uploads: list[UserUploadDto] | None = None,
+    ) -> UserDtoT: ...
 
 
 class MinimalUserDto(BaseModel):
@@ -31,9 +37,12 @@ class MinimalUserDto(BaseModel):
     role: str
     about: str | None
     birthday: datetime | None
+    uploads: list[UserUploadDto] | None = None
 
     @classmethod
-    def from_tortoise(cls, user: UserModel) -> "MinimalUserDto":
+    def from_tortoise(
+        cls, user: UserModel, uploads: list[UserUploadDto] | None = None
+    ) -> "MinimalUserDto":
         return MinimalUserDto(
             id=user.id,
             first_name=user.first_name,
@@ -45,6 +54,7 @@ class MinimalUserDto(BaseModel):
             about=user.about,
             birthday=user.birthday,
             formatted_name=f"{user.last_name} {user.first_name} {user.patronymic}",
+            uploads=uploads,
         )
 
 
@@ -52,7 +62,9 @@ class FullUserDto(MinimalUserDto):
     email: str
 
     @classmethod
-    def from_tortoise(cls, user: UserModel) -> "FullUserDto":
+    def from_tortoise(
+        cls, user: UserModel, uploads: list[UserUploadDto] | None = None
+    ) -> "FullUserDto":
         return FullUserDto(
             id=user.id,
             first_name=user.first_name,
@@ -65,6 +77,7 @@ class FullUserDto(MinimalUserDto):
             birthday=user.birthday,
             is_banned=user.is_banned,
             formatted_name=f"{user.last_name} {user.first_name} {user.patronymic}",
+            uploads=uploads,
         )
 
 
@@ -75,7 +88,9 @@ class ExternalUserDto(BaseModel):
     role: str
 
     @classmethod
-    def from_tortoise(cls, user: UserModel) -> "ExternalUserDto":
+    def from_tortoise(
+        cls, user: UserModel, uploads: list[UserUploadDto] | None = None
+    ) -> "ExternalUserDto":
         return ExternalUserDto(
             id=user.id,
             is_banned=user.is_banned,

@@ -1,4 +1,5 @@
-from app.services.avatar import IUserAvatarService, UserAvatarService
+from app.services.uploads.interface import IUserUploadService
+from app.services.uploads.service import UserUploadService
 from app.services.auth import AuthService, IAuthService
 from app.services.user.interface import IUserService
 from app.adapters.storage import S3StorageAdapter
@@ -14,19 +15,20 @@ def get_storage_adapter() -> IStoragePort:
 
 
 @lru_cache
-def get_avatar_controller(
+def get_upload_service(
     storage: IStoragePort = Depends(get_storage_adapter),
-) -> IUserAvatarService:
-    return UserAvatarService(storage)
+) -> IUserUploadService:
+    return UserUploadService(storage)
 
 
 @lru_cache
-def get_auth_controller() -> IAuthService:
+def get_auth_service() -> IAuthService:
     return AuthService()
 
 
 @lru_cache
-def get_user_controller(
-    controller: IAuthService = Depends(get_auth_controller),
+def get_user_service(
+    auth_service: IAuthService = Depends(get_auth_service),
+    upload_service: IUserUploadService = Depends(get_upload_service),
 ) -> IUserService:
-    return UserService(controller)
+    return UserService(auth_service, upload_service)

@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class TeamServiceSettings(BaseSettings):
+class UserServiceSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
@@ -15,7 +15,7 @@ class TeamServiceSettings(BaseSettings):
     INTERNAL_API_KEY: str = "apikey"
     JWT_SECRET: str = "dstu"
     ROOT_PATH: str = ""
-    AVATAR_PATH: str = "/uploads/avatars/"
+    PUBLIC_API_URL: str = "http://localhost/user/"
 
 
-Settings = TeamServiceSettings()
+Settings = UserServiceSettings()
