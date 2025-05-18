@@ -1,3 +1,4 @@
+from app.services.uploads.interface import IUserUploadService
 from app.services.user.interface import IUserService
 from app.services.auth import IAuthService
 from app.acl.roles import UserRoles
@@ -15,10 +16,10 @@ from .dto import (
     UserDtoT,
 )
 from .exceptions import (
-    NoUserWithSuchEmailException,
-    UserIsBannedException,
     UserWithThatEmailExistsException,
     InvalidLoginCredentialsException,
+    NoUserWithSuchEmailException,
+    UserIsBannedException,
     NoSuchUserException,
 )
 
@@ -27,8 +28,11 @@ SALT = bcrypt.gensalt()
 
 
 class UserService(IUserService):
-    def __init__(self, auth_service: IAuthService):
+    def __init__(
+        self, auth_service: IAuthService, upload_service: IUserUploadService
+    ):
         self.auth_service = auth_service
+        self.upload_service = upload_service
 
     async def get_user_from_id(self, user_id: int) -> UserModel:
         user = await UserModel.get_or_none(id=user_id)
@@ -80,17 +84,44 @@ class UserService(IUserService):
         self, user_id: int, dto_class: Type[UserDtoT]
     ) -> UserDtoT:
         user = await self.get_user_from_id(user_id)
-        return dto_class.from_tortoise(user)
+        return dto_class.from_tortoise(
+            user, await self.upload_service.get_uploads(user.id)
+        )
 
     async def get_info_many(
-        self, user_ids: list[int], dto_class: Type[UserDtoT]
+        self,
+        user_ids: list[int],
+        dto_class: Type[UserDtoT],
+        *,
+        include_uploads: bool = False,
     ) -> list[UserDtoT]:
         users = await UserModel.filter(id__in=user_ids)
-        return [dto_class.from_tortoise(user) for user in users]
+        if include_uploads:
+            return [
+                dto_class.from_tortoise(
+                    user, await self.upload_service.get_uploads(user.id)
+                )
+                for user in users
+            ]
+        else:
+            return [dto_class.from_tortoise(user) for user in users]
 
-    async def get_info_all(self, dto_class: Type[UserDtoT]) -> list[UserDtoT]:
+    async def get_info_all(
+        self,
+        dto_class: Type[UserDtoT],
+        *,
+        include_uploads: bool = False,
+    ) -> list[UserDtoT]:
         users = await UserModel.all()
-        return [dto_class.from_tortoise(user) for user in users]
+        if include_uploads:
+            return [
+                dto_class.from_tortoise(
+                    user, await self.upload_service.get_uploads(user.id)
+                )
+                for user in users
+            ]
+        else:
+            return [dto_class.from_tortoise(user) for user in users]
 
     async def update_info(
         self, user_id: int, dto: OptionalFullUserDataDto
@@ -99,7 +130,9 @@ class UserService(IUserService):
         user.update_from_dict(dto.model_dump(exclude_none=True))
 
         await user.save()
-        return FullUserDto.from_tortoise(user)
+        return FullUserDto.from_tortoise(
+            user, await self.upload_service.get_uploads(user.id)
+        )
 
     async def delete(self, user_id: int) -> None:
         user = await self.get_user_from_id(user_id)
@@ -109,18 +142,24 @@ class UserService(IUserService):
         user = await self.get_user_from_id(user_id)
         user.password_hash = bcrypt.hashpw(password.encode(), SALT).decode()
         await user.save()
-        return FullUserDto.from_tortoise(user)
+        return FullUserDto.from_tortoise(
+            user, await self.upload_service.get_uploads(user.id)
+        )
 
     async def set_role(self, user_id: int, role: UserRoles) -> FullUserDto:
         user = await self.get_user_from_id(user_id)
         user.role = role
         await user.save()
-        return FullUserDto.from_tortoise(user)
+        return FullUserDto.from_tortoise(
+            user, await self.upload_service.get_uploads(user.id)
+        )
 
     async def get_by_email(self, email: str) -> MinimalUserDto:
         user = await UserModel.get_or_none(email=email)
         if user:
-            return MinimalUserDto.from_tortoise(user)
+            return MinimalUserDto.from_tortoise(
+                user, await self.upload_service.get_uploads(user.id)
+            )
 
         raise NoUserWithSuchEmailException()
 
@@ -134,4 +173,6 @@ class UserService(IUserService):
         # и забаненный пользователь не сможет даже зайти в аккаунт
         await self.auth_service.generate_refresh_token(user.id, user.role)
 
-        return FullUserDto.from_tortoise(user)
+        return FullUserDto.from_tortoise(
+            user, await self.upload_service.get_uploads(user.id)
+        )

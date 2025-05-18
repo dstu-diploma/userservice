@@ -1,17 +1,17 @@
-from app.models.user import UserUploadsType
-from app.services.uploads.dto import UserUploadDto
 from app.services.uploads.interface import IUserUploadService
 from fastapi import APIRouter, Depends, Query, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from app.services.user.interface import IUserService
+from app.services.uploads.dto import UserUploadDto
+from app.models.user import UserUploadsType
 from app.acl.permissions import Permissions
 from .dto import AccessTokenDto
 
 from app.services.user.dto import (
     OptionalFullUserDataDto,
     RegisteredUserDto,
-    CreateUserDto,
     MinimalUserDto,
+    CreateUserDto,
     FullUserDto,
 )
 
@@ -130,7 +130,9 @@ async def get_info_many(
     """
     Возвращает данные о пользователях с заданными ID. Если какого то из пользователей не существует, то он не попадет в список.
     """
-    return await user_service.get_info_many(user_ids, MinimalUserDto)
+    return await user_service.get_info_many(
+        user_ids, MinimalUserDto, include_uploads=True
+    )
 
 
 @router.get("/search-by-email", summary="Поиск пользователя")

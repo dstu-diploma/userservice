@@ -28,6 +28,7 @@ def get_auth_service() -> IAuthService:
 
 @lru_cache
 def get_user_service(
-    service: IAuthService = Depends(get_auth_service),
+    auth_service: IAuthService = Depends(get_auth_service),
+    upload_service: IUserUploadService = Depends(get_upload_service),
 ) -> IUserService:
-    return UserService(service)
+    return UserService(auth_service, upload_service)

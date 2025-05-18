@@ -1,3 +1,4 @@
+from app.services.uploads.interface import IUserUploadService
 from app.services.auth import IAuthService
 from app.acl.roles import UserRoles
 from typing import Protocol, Type
@@ -15,6 +16,7 @@ from .dto import (
 
 class IUserService(Protocol):
     auth_service: IAuthService
+    upload_service: IUserUploadService
 
     async def get_user_from_id(self, user_id: int) -> UserModel: ...
     async def create(
@@ -25,10 +27,17 @@ class IUserService(Protocol):
         self, user_id: int, dto_class: Type[UserDtoT]
     ) -> UserDtoT: ...
     async def get_info_many(
-        self, user_ids: list[int], dto_class: Type[UserDtoT]
+        self,
+        user_ids: list[int],
+        dto_class: Type[UserDtoT],
+        *,
+        include_uploads: bool = False,
     ) -> list[UserDtoT]: ...
     async def get_info_all(
-        self, dto_class: Type[UserDtoT]
+        self,
+        dto_class: Type[UserDtoT],
+        *,
+        include_uploads: bool = False,
     ) -> list[UserDtoT]: ...
     async def update_info(
         self, user_id: int, dto: OptionalFullUserDataDto

@@ -27,7 +27,7 @@ async def get_all(
     """
     Возвращает список всех зарегистрированных пользователей.
     """
-    return await user_service.get_info_all(FullUserDto)
+    return await user_service.get_info_all(FullUserDto, include_uploads=True)
 
 
 @router.get(
