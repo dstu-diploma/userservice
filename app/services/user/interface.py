@@ -1,4 +1,5 @@
 from app.services.uploads.interface import IUserUploadService
+from app.ports.event_publisher import IEventPublisherPort
 from app.services.auth import IAuthService
 from app.acl.roles import UserRoles
 from typing import Protocol, Type
@@ -17,6 +18,7 @@ from .dto import (
 class IUserService(Protocol):
     auth_service: IAuthService
     upload_service: IUserUploadService
+    event_publisher: IEventPublisherPort
 
     async def get_user_from_id(self, user_id: int) -> UserModel: ...
     async def create(
