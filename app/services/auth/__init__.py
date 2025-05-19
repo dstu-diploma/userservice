@@ -1,3 +1,5 @@
+from app.models.user import UserModel
+from app.services.user.exceptions import NoSuchUserException
 from .dto import AccessJWTPayloadDto, RefreshJWTPayloadDto, UserJWTDto
 from app.acl.permissions import PermissionAcl, perform_check
 from jose import ExpiredSignatureError, JWTError, jwt
@@ -63,9 +65,16 @@ class AuthService(IAuthService):
 
     async def generate_access_token(self, refresh_token: str) -> str:
         refresh_payload = await self.validate_refresh_token(refresh_token)
+        user = await UserModel.get_or_none(id=refresh_payload.user_id).only(
+            "role"
+        )
+
+        if user is None:
+            raise NoSuchUserException()
+
         payload = AccessJWTPayloadDto(
             user_id=refresh_payload.user_id,
-            role=refresh_payload.role,
+            role=user.role,
             exp=datetime.now() + timedelta(minutes=20),
         )
 
