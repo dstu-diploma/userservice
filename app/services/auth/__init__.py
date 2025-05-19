@@ -15,6 +15,7 @@ from fastapi.security import (
     HTTPBearer,
 )
 from .exceptions import (
+    NotARefreshTokenException,
     RestrictedPermissionException,
     NoSuchTokenUserException,
     JWTParseErrorException,
@@ -95,6 +96,8 @@ class AuthService(IAuthService):
     async def validate_refresh_token(self, token: str) -> RefreshJWTPayloadDto:
         try:
             raw_payload = jwt.decode(token, Settings.JWT_SECRET)
+            if "token_revision" not in raw_payload:
+                raise NotARefreshTokenException()
             payload = RefreshJWTPayloadDto(**raw_payload)
             user = await self._get_user_by_id(payload.user_id)
 
