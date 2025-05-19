@@ -44,3 +44,11 @@ class InvalidTokenRevision(HTTPException):
             status_code=403,
             detail=f"Рефреш-токен потерял актуальность в виду изменений в пользователе! Необходимо залогиниться заново",
         )
+
+
+class NotARefreshTokenException(HTTPException):
+    def __init__(self):
+        super().__init__(
+            status_code=400,
+            detail=f"Переданный токен не является Refresh!",
+        )

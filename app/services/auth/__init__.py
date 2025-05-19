@@ -1,3 +1,5 @@
+from app.models.user import UserModel
+from app.services.user.exceptions import NoSuchUserException
 from .dto import AccessJWTPayloadDto, RefreshJWTPayloadDto, UserJWTDto
 from app.acl.permissions import PermissionAcl, perform_check
 from jose import ExpiredSignatureError, JWTError, jwt
@@ -15,6 +17,7 @@ from fastapi.security import (
     HTTPBearer,
 )
 from .exceptions import (
+    NotARefreshTokenException,
     RestrictedPermissionException,
     NoSuchTokenUserException,
     JWTParseErrorException,
@@ -62,9 +65,16 @@ class AuthService(IAuthService):
 
     async def generate_access_token(self, refresh_token: str) -> str:
         refresh_payload = await self.validate_refresh_token(refresh_token)
+        user = await UserModel.get_or_none(id=refresh_payload.user_id).only(
+            "role"
+        )
+
+        if user is None:
+            raise NoSuchUserException()
+
         payload = AccessJWTPayloadDto(
             user_id=refresh_payload.user_id,
-            role=refresh_payload.role,
+            role=user.role,
             exp=datetime.now() + timedelta(minutes=20),
         )
 
@@ -95,6 +105,8 @@ class AuthService(IAuthService):
     async def validate_refresh_token(self, token: str) -> RefreshJWTPayloadDto:
         try:
             raw_payload = jwt.decode(token, Settings.JWT_SECRET)
+            if "token_revision" not in raw_payload:
+                raise NotARefreshTokenException()
             payload = RefreshJWTPayloadDto(**raw_payload)
             user = await self._get_user_by_id(payload.user_id)
 

@@ -173,7 +173,7 @@ async def upload_avatar(
     response_model=UserUploadDto,
     summary="Установка/обновление обложки",
 )
-async def upload_avatar(
+async def upload_cover(
     file: UploadFile,
     user_dto: AccessJWTPayloadDto = Depends(
         PermittedAction(Permissions.UpdateSelf)
