@@ -2,6 +2,7 @@ from app.services.user.dto import CreateUserDto, RegisteredUserDto
 from app.services.uploads.interface import IUserUploadService
 from app.services.user.interface import IUserService
 from fastapi.datastructures import Headers
+from app.acl.roles import UserRoles
 from fastapi import UploadFile
 from faker import Faker
 import pytest_asyncio
@@ -24,6 +25,15 @@ async def _create_user(faker: Faker, mock_user_service: IUserService, **params):
     if params.get("is_banned", False):
         await mock_user_service.set_is_banned(user.user.id, True)
         user.user.is_banned = True
+
+    if params.get("role", None):
+        await mock_user_service.set_role(user.user.id, params["role"])
+        user.user.role = params["role"]
+        user.access_token = (
+            await mock_user_service.auth_service.generate_access_token(
+                user.refresh_token
+            )
+        )
 
     return user
 
@@ -53,6 +63,14 @@ async def user_with_avatar(
 
     await mock_upload_service.upload_avatar(file, user.user.id)
     return user
+
+
+@pytest_asyncio.fixture
+async def admin_user(request, faker: Faker, mock_user_service: IUserService):
+    params = getattr(request, "param", {})
+    return await _create_user(
+        faker, mock_user_service, role=UserRoles.Admin, **params
+    )
 
 
 @pytest_asyncio.fixture
