@@ -29,4 +29,6 @@ async def get_info_many(
     _token: str = Depends(get_token_from_header),
     user_service: IUserService = Depends(get_user_service),
 ):
-    return await user_service.get_info_many(user_ids, ExternalUserDto)
+    return await user_service.get_info_many(
+        user_ids, ExternalUserDto, include_uploads=True
+    )

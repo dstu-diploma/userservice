@@ -86,6 +86,7 @@ class ExternalUserDto(BaseModel):
     is_banned: bool
     formatted_name: str
     role: str
+    uploads: list[UserUploadDto] | None = None
 
     @classmethod
     def from_tortoise(
@@ -96,6 +97,7 @@ class ExternalUserDto(BaseModel):
             is_banned=user.is_banned,
             role=user.role,
             formatted_name=f"{user.last_name} {user.first_name} {user.patronymic}",
+            uploads=uploads,
         )
 
 
