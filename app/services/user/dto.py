@@ -1,17 +1,24 @@
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 from typing import Annotated, Protocol, Type, TypeVar
-from pydantic import BaseModel, StringConstraints
+from app.services.uploads.dto import UserUploadDto
 from app.models.user import UserModel
 from datetime import datetime
 
-from app.services.uploads.dto import UserUploadDto
-
 
 class CreateUserDto(BaseModel):
-    email: Annotated[str, StringConstraints(min_length=4)]
-    first_name: Annotated[str, StringConstraints(min_length=3)]
-    last_name: Annotated[str, StringConstraints(min_length=3)]
-    patronymic: Annotated[str, StringConstraints(min_length=3)]
-    password: Annotated[str, StringConstraints(min_length=8)]
+    email: EmailStr = Field(examples=["me@maladesov.ru", "nzabashtin@mail.ru"])
+    first_name: Annotated[str, StringConstraints(min_length=3)] = Field(
+        examples=["Иван", "Дима"]
+    )
+    last_name: Annotated[str, StringConstraints(min_length=3)] = Field(
+        examples=["Беляев", "Кузьмич"]
+    )
+    patronymic: Annotated[str, StringConstraints(min_length=3)] = Field(
+        examples=["Валерьевич", "Викторович"]
+    )
+    password: Annotated[str, StringConstraints(min_length=8)] = Field(
+        examples=["ihd9vuDHG((dgv))", "SS&A^^&^SVG^*HGBH"]
+    )
 
 
 UserDtoT = TypeVar("UserDtoT", bound="IUserDto")
